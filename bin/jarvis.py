@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import os, subprocess, argparse
 from datetime import datetime
 
