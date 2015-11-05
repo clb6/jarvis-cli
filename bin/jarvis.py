@@ -7,14 +7,20 @@ if "__main__" == __name__:
 
     subparsers = parser.add_subparsers(help='Actions for Jarvis',
             dest='action_name')
-    parser_create = subparsers.add_parser('new', help='Create an information element')
-    parser_create.add_argument('type', choices=['entry', 'tag'],
-            help='Information element type - required')
+    parser_new = subparsers.add_parser('new', help='Create an information element')
+    subparsers_new = parser_new.add_subparsers(help='Types of new information element',
+            dest='element_type')
+    parser_new_log = subparsers_new.add_parser('log', help='Create a new log entry')
+    parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag element')
 
     args = parser.parse_args()
 
     # NOTE: Argparse should filter and validate and ensure that only the known
     # choices get through to this point.
+    # UPDATE: There is a case where the subsubparser allows for Nones to slip
+    # through. The required flag doesn't seem to be reinforced so the following
+    # is acceptable to Argparse which sucks for me:
+    #   jarvis.py new
 
     if args.action_name == 'new':
         env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
@@ -29,7 +35,7 @@ if "__main__" == __name__:
             f.write("Version: {0}\n".format(env_version))
             f.write("Tags: \n")
 
-        if args.type == 'entry':
+        if args.element_type == 'log':
             dir_jarvis_logs = "{0}/LogEntries".format(env_dir_jarvis_root)
 
             # datetime.fromtimestamp(0) is not Unix epoch and returns
@@ -41,8 +47,15 @@ if "__main__" == __name__:
 
             with open(filepath, 'w') as f:
                 write_metadata(f)
+        elif args.element_type == 'tag':
+            filepath = None
+            print("TAG")
+        else:
+            raise NotImplementedError("Unknown information type: {0}"
+                    .format(args.element_type))
 
-        subprocess.call(["vim", filepath])
-        print("Created: {0}".format(filepath))
-    else:
-        print('DOH')
+        if filepath:
+            subprocess.call(["vim", filepath])
+            print("Created: {0}".format(filepath))
+        else:
+            print("Failed to create new information element")
