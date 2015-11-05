@@ -36,6 +36,9 @@ if "__main__" == __name__:
 
             filepath = "{0}/{1}.md".format(dir_target, filename)
 
+            if os.path.isfile(filepath):
+                raise IOError("File already exists! {0}".format(filepath))
+
             with open(filepath, 'w') as f:
                 f.write("Author: {0}\n".format(env_author))
                 f.write("Created: {0}\n".format(created.isoformat()))
@@ -53,13 +56,18 @@ if "__main__" == __name__:
                 int((created - epoch).total_seconds()))
         elif args.element_type == 'tag':
             filepath = create_stub_file('Tags', args.tag_name)
-            print("TAG")
+
+            # Add the title which should be the tag name
+            with open(filepath, 'a') as f:
+                # TODO: Would be very cool to reinforce camel case for the file
+                # name and canonical for title.
+                f.write("\n# {0}\n".format(args.tag_name))
         else:
             raise NotImplementedError("Unknown information type: {0}"
                     .format(args.element_type))
 
         if filepath:
             subprocess.call(["vim", filepath])
-            print("Created: {0}".format(filepath))
+            print("Created: {0}, {1}".format(args.element_type, filepath))
         else:
             print("Failed to create new information element")
