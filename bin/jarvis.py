@@ -24,6 +24,7 @@ if "__main__" == __name__:
     #   jarvis.py new
 
     if args.action_name == 'new':
+        # TODO: Make a test mode where it writes to a test directory.
         env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
         env_author = os.environ['JARVIS_AUTHOR']
         env_version = "0.1.0"
