@@ -3,6 +3,26 @@
 import os, subprocess, argparse
 from datetime import datetime
 
+class JarvisSettings(object):
+
+    def __init__(self):
+        # TODO: Make a test mode where it writes to a test directory.
+        self._env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
+        self._env_author = os.environ['JARVIS_AUTHOR']
+        self._env_version = "0.1.0"
+
+    @property
+    def root_directory(self):
+        return self._env_dir_jarvis_root
+
+    @property
+    def author(self):
+        return self._env_author
+
+    @property
+    def document_version(self):
+        return self._env_version
+
 
 if "__main__" == __name__:
     parser = argparse.ArgumentParser(description='Jarvis is used for personal information management')
@@ -32,15 +52,12 @@ if "__main__" == __name__:
     #   jarvis.py new
 
     if args.action_name == 'new':
-        # TODO: Make a test mode where it writes to a test directory.
-        env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
-        env_author = os.environ['JARVIS_AUTHOR']
-        env_version = "0.1.0"
+        js = JarvisSettings()
 
         created = datetime.utcnow().replace(microsecond=0)
 
         def create_stub_file(subdir_name, filename):
-            dir_target = "{0}/{1}".format(env_dir_jarvis_root, subdir_name)
+            dir_target = "{0}/{1}".format(js.root_directory, subdir_name)
 
             filepath = "{0}/{1}.md".format(dir_target, filename)
 
@@ -48,9 +65,9 @@ if "__main__" == __name__:
                 raise IOError("File already exists! {0}".format(filepath))
 
             with open(filepath, 'w') as f:
-                f.write("Author: {0}\n".format(env_author))
+                f.write("Author: {0}\n".format(js.author))
                 f.write("Created: {0}\n".format(created.isoformat()))
-                f.write("Version: {0}\n".format(env_version))
+                f.write("Version: {0}\n".format(js.document_version))
                 f.write("Tags: \n")
 
             return filepath
