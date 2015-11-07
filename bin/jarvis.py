@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, subprocess, argparse
+import os, subprocess, argparse, re
 from datetime import datetime
 
 class JarvisSettings(object):
@@ -51,9 +51,9 @@ if "__main__" == __name__:
     # is acceptable to Argparse which sucks for me:
     #   jarvis.py new
 
-    if args.action_name == 'new':
-        js = JarvisSettings()
+    js = JarvisSettings()
 
+    if args.action_name == 'new':
         created = datetime.utcnow().replace(microsecond=0)
 
         def create_stub_file(subdir_name, filename):
@@ -99,7 +99,12 @@ if "__main__" == __name__:
     elif args.action_name == 'show':
 
         if args.show_type == 'tags':
-            print('Show me the tags')
+            tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
+            tag_pattern = re.compile('(\w*)\.md')
+
+            for tag_file in sorted(os.listdir(tags_dir)):
+                tag = tag_pattern.search(tag_file).group(1)
+                print(tag)
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
