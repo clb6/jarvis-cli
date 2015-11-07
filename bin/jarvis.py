@@ -9,12 +9,18 @@ if "__main__" == __name__:
 
     subparsers = parser.add_subparsers(help='Actions for Jarvis',
             dest='action_name')
+
     parser_new = subparsers.add_parser('new', help='Create an information element')
     subparsers_new = parser_new.add_subparsers(help='Types of new information element',
             dest='element_type')
     parser_new_log = subparsers_new.add_parser('log', help='Create a new log entry')
     parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag element')
     parser_new_tag.add_argument('tag_name', help='Tag name')
+
+    parser_show = subparsers.add_parser('show', help='Show information elements')
+    subparsers_show = parser_show.add_subparsers(help='Types of show actions',
+            dest='show_type')
+    parser_show_tags = subparsers_show.add_parser('tags', help='Show tags')
 
     args = parser.parse_args()
 
@@ -73,3 +79,10 @@ if "__main__" == __name__:
             print("Created: {0}, {1}".format(args.element_type, filepath))
         else:
             print("Failed to create new information element")
+    elif args.action_name == 'show':
+
+        if args.show_type == 'tags':
+            print('Show me the tags')
+        else:
+            raise NotImplementedError("Unknown show type: {0}"
+                    .format(args.show_type))
