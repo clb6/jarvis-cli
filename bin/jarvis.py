@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, subprocess, argparse, re
+import webbrowser
 from datetime import datetime
 
 class JarvisSettings(object):
@@ -30,6 +31,7 @@ if "__main__" == __name__:
     subparsers = parser.add_subparsers(help='Actions for Jarvis',
             dest='action_name')
 
+    # New actions
     parser_new = subparsers.add_parser('new', help='Create an information element')
     subparsers_new = parser_new.add_subparsers(help='Types of new information element',
             dest='element_type')
@@ -37,10 +39,13 @@ if "__main__" == __name__:
     parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag element')
     parser_new_tag.add_argument('tag_name', help='Tag name')
 
+    # Show actions
     parser_show = subparsers.add_parser('show', help='Show information elements')
     subparsers_show = parser_show.add_subparsers(help='Types of show actions',
             dest='show_type')
-    parser_show_tags = subparsers_show.add_parser('tags', help='Show tags')
+    parser_show_tags = subparsers_show.add_parser('tags', help='List all tags')
+    parser_show_tag = subparsers_show.add_parser('tag', help='Open a tag in the browser')
+    parser_show_tag.add_argument('tag_name', help='Tag name')
 
     args = parser.parse_args()
 
@@ -98,13 +103,25 @@ if "__main__" == __name__:
             print("Failed to create new information element")
     elif args.action_name == 'show':
 
+        tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
+
         if args.show_type == 'tags':
-            tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
             tag_pattern = re.compile('(\w*)\.md')
 
             for tag_file in sorted(os.listdir(tags_dir)):
                 tag = tag_pattern.search(tag_file).group(1)
                 print(tag)
+        elif args.show_type == 'tag':
+            filepath = "{0}/{1}.md".format(tags_dir, args.tag_name)
+
+            if not os.path.isfile(filepath):
+                raise IOError("Tag does not exist! {0}".format(filepath))
+
+            # Previews the markdown. This will require you to change the
+            # mimeapps.list setting file in order to chose your markdown preview
+            # tool.
+            filepath_browser = "file://{0}".format(filepath)
+            webbrowser.open(filepath_browser)
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
