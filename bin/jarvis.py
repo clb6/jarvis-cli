@@ -167,7 +167,10 @@ if "__main__" == __name__:
             # 2. Convert each file to json
             # 3. Filter by tag if need be
             # 4. Print entries
-            for log_file in sorted(os.listdir(logs_dir), reverse=True):
+
+            # NOTE: The sort order is increasing in time because the most recent
+            # should be visible at the new command prompt.
+            for log_file in sorted(os.listdir(logs_dir), reverse=False):
                 log_path = "{0}/{1}".format(logs_dir, log_file)
 
                 with open(log_path, 'r') as f:
