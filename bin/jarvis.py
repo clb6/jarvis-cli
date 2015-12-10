@@ -129,8 +129,58 @@ if "__main__" == __name__:
             filepath_browser = "file://{0}".format(filepath)
             webbrowser.open(filepath_browser)
         elif args.show_type == 'logs':
-            tag_to_find = args.tag if args.tag else 'all'
-            print("Going to show logs for {0}".format(tag_to_find))
+            def convert_file_to_json(src_file):
+                """
+                Form a json representation of a log file.
+                """
+                d = src_file.read().split('\n')
+
+                def parse_metadata(line):
+                    """
+                    Looking for Author, Created, Version, Tags
+
+                    :param line: line for metadata e.g. "Author: John Doe"
+                    :type line: string
+
+                    :return: (key string, value string)
+                    """
+                    m = re.search('^(Author|Created|Version|Tags): (.*)', line)
+                    return m.group(1).lower(), m.group(2)
+
+                t = (parse_metadata(d[i]) for i in range(0, 4))
+                response = dict(t)
+                response['tags'] = response['tags'].split(', ')
+                response['body'] = "\n".join(d[5:])
+                return response
+
+            def convert_json_to_summary(src_json):
+                """
+                Form a summary representation of the log file.
+                """
+                # Clip the body
+                clip = src_json['body'].split('\n')[0][0:250]
+                return "\n".join([log_file, ", ".join(src_json['tags']), clip])
+
+            entries = []
+
+            # 1. Go through each log file
+            # 2. Convert each file to json
+            # 3. Filter by tag if need be
+            # 4. Print entries
+            for log_file in sorted(os.listdir(logs_dir), reverse=True):
+                log_path = "{0}/{1}".format(logs_dir, log_file)
+
+                with open(log_path, 'r') as f:
+                    json_rep = convert_file_to_json(f)
+
+                if not args.tag:
+                    entries.append(convert_json_to_summary(json_rep))
+
+            if entries:
+                print("\n\n".join(entries))
+                print("\n\nLog entries found: {0}".format(len(entries)))
+            else:
+                print("No log entries found")
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
