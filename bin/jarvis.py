@@ -173,7 +173,8 @@ if "__main__" == __name__:
                 with open(log_path, 'r') as f:
                     json_rep = convert_file_to_json(f)
 
-                if not args.tag:
+                if not args.tag or any([args.tag.lower() in tag.lower()
+                    for tag in json_rep['tags']]):
                     entries.append(convert_json_to_summary(json_rep))
 
             if entries:
