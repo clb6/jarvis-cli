@@ -43,7 +43,12 @@ if "__main__" == __name__:
     parser_show = subparsers.add_parser('show', help='Show information elements')
     subparsers_show = parser_show.add_subparsers(help='Types of show actions',
             dest='show_type')
+
+    parser_show_logs = subparsers_show.add_parser('logs', help='List all logs')
+    parser_show_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
+
     parser_show_tags = subparsers_show.add_parser('tags', help='List all tags')
+
     parser_show_tag = subparsers_show.add_parser('tag', help='Open a tag in the browser')
     parser_show_tag.add_argument('tag_name', help='Tag name')
 
@@ -104,6 +109,7 @@ if "__main__" == __name__:
     elif args.action_name == 'show':
 
         tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
+        logs_dir = "{0}/{1}".format(js.root_directory, 'LogEntries')
 
         if args.show_type == 'tags':
             tag_pattern = re.compile('(\w*)\.md')
@@ -122,6 +128,9 @@ if "__main__" == __name__:
             # tool.
             filepath_browser = "file://{0}".format(filepath)
             webbrowser.open(filepath_browser)
+        elif args.show_type == 'logs':
+            tag_to_find = args.tag if args.tag else 'all'
+            print("Going to show logs for {0}".format(tag_to_find))
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
