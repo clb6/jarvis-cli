@@ -42,6 +42,7 @@ Command | Type | Description
 new     | log  | creates a new instance of a log entry
 new     | tag  | creates a new instance of a tag
 show    | logs | show list of logs for a given tag
+show    | lastlog | show the last log for a given tag
 show    | log  | show log entry
 show    | tags | show all tags
 show    | tag  | show tag
