@@ -199,6 +199,8 @@ if "__main__" == __name__:
             else:
                 print("No log entries found")
         elif args.show_type == 'lastlog':
+            is_found = False
+
             for log_file in sorted(os.listdir(logs_dir), reverse=True):
                 log_path = "{0}/{1}".format(logs_dir, log_file)
 
@@ -208,9 +210,11 @@ if "__main__" == __name__:
                 if any([args.tag.lower() in tag.lower()
                     for tag in json_rep['tags']]):
                     open_file(logs_dir, log_file)
+                    is_found = True
                     break
 
-            print("There is no log entry for \"{0}\"".format(args.tag))
+            if not is_found:
+                print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
             open_file(logs_dir, args.log_entry_name)
         else:
