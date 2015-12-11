@@ -111,7 +111,7 @@ if "__main__" == __name__:
             epoch = datetime(1970, 1, 1)
 
             filepath = create_stub_file('LogEntries',
-                int((created - epoch).total_seconds()))
+                str(int((created - epoch).total_seconds())))
         elif args.element_type == 'tag':
             filepath = create_stub_file('Tags', args.tag_name)
 
