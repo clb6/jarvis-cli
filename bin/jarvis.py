@@ -114,6 +114,18 @@ if "__main__" == __name__:
         tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
         logs_dir = "{0}/{1}".format(js.root_directory, 'LogEntries')
 
+        def open_file(file_dir, file_name):
+            filepath = "{0}/{1}.md".format(file_dir, file_name)
+
+            if not os.path.isfile(filepath):
+                raise IOError("File does not exist! {0}".format(filepath))
+
+            # Previews the markdown. This will require you to change the
+            # mimeapps.list setting file in order to chose your markdown preview
+            # tool.
+            filepath_browser = "file://{0}".format(filepath)
+            webbrowser.open(filepath_browser)
+
         if args.show_type == 'tags':
             tag_pattern = re.compile('(\w*)\.md')
 
@@ -121,16 +133,7 @@ if "__main__" == __name__:
                 tag = tag_pattern.search(tag_file).group(1)
                 print(tag)
         elif args.show_type == 'tag':
-            filepath = "{0}/{1}.md".format(tags_dir, args.tag_name)
-
-            if not os.path.isfile(filepath):
-                raise IOError("Tag does not exist! {0}".format(filepath))
-
-            # Previews the markdown. This will require you to change the
-            # mimeapps.list setting file in order to chose your markdown preview
-            # tool.
-            filepath_browser = "file://{0}".format(filepath)
-            webbrowser.open(filepath_browser)
+            open_file(tags_dir, args.tag_name)
         elif args.show_type == 'logs':
             def convert_file_to_json(src_file):
                 """
@@ -189,7 +192,7 @@ if "__main__" == __name__:
             else:
                 print("No log entries found")
         elif args.show_type == 'log':
-            print(args)
+            open_file(logs_dir, args.log_entry_name)
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
