@@ -47,9 +47,12 @@ if "__main__" == __name__:
     parser_show_logs = subparsers_show.add_parser('logs', help='List all logs')
     parser_show_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
 
+    parser_show_log = subparsers_show.add_parser('log', help='Open log entry in the browser')
+    parser_show_log.add_argument('log_entry_name', help='Log name')
+
     parser_show_tags = subparsers_show.add_parser('tags', help='List all tags')
 
-    parser_show_tag = subparsers_show.add_parser('tag', help='Open a tag in the browser')
+    parser_show_tag = subparsers_show.add_parser('tag', help='Open tag in the browser')
     parser_show_tag.add_argument('tag_name', help='Tag name')
 
     args = parser.parse_args()
@@ -185,6 +188,8 @@ if "__main__" == __name__:
                 print("\n\nLog entries found: {0}".format(len(entries)))
             else:
                 print("No log entries found")
+        elif args.show_type == 'log':
+            print(args)
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
