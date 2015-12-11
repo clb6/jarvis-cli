@@ -19,3 +19,30 @@ text/x-markdown=chromium-browser.desktop
 ```
 
 The full documentation on mimeapps.list can be found [here](http://standards.freedesktop.org/mime-apps-spec/mime-apps-spec-1.0.html).  The mimeapps.list can probably be found in your home directory `~/.local/share/applications/`.
+
+## Workflow
+
+The goal to absorbing, to experiencing, to learning in life is to curate knowledge and perceptions on concepts and how they inter-relate.  The hypothesis is that curating concepts requires one to have one to many different experiences which are recorded via log entries.  The flow is to create log entries which are to be used for creating curated content.
+
+### Log Entries
+
+* Recordings on experiences
+* Reflections on the digestion of information
+* Notes on observations
+* Thoughts on the universe
+
+### Tags
+
+People, places, things, concepts that best define what we experience or best describes what we are trying to capture.
+
+## Commands
+
+Command | Type | Description
+------- | ---- | -----------
+new     | log  | creates a new instance of a log entry
+new     | tag  | creates a new instance of a tag
+show    | logs | show list of logs for a given tag
+show    | log  | show log entry
+show    | tags | show all tags
+show    | tag  | show tag
+
