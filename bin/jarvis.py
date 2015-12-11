@@ -71,13 +71,28 @@ if "__main__" == __name__:
 
     js = JarvisSettings()
 
+    def show_file(filepath):
+        if not os.path.isfile(filepath):
+            raise IOError("File does not exist! {0}".format(filepath))
+
+        # Previews the markdown. This will require you to change the
+        # mimeapps.list setting file in order to chose your markdown preview
+        # tool.
+        filepath_browser = "file://{0}".format(filepath)
+        webbrowser.open(filepath_browser)
+
+    def create_filepath(file_dir, file_name):
+        file_name = file_name if ".md" in file_name \
+                else "{0}.md".format(file_name)
+        return "{0}/{1}".format(file_dir, file_name)
+
     if args.action_name == 'new':
         created = datetime.utcnow().replace(microsecond=0)
 
         def create_stub_file(subdir_name, filename):
             dir_target = "{0}/{1}".format(js.root_directory, subdir_name)
 
-            filepath = "{0}/{1}.md".format(dir_target, filename)
+            filepath = create_filepath(dir_target, filename)
 
             if os.path.isfile(filepath):
                 raise IOError("File already exists! {0}".format(filepath))
@@ -111,6 +126,7 @@ if "__main__" == __name__:
 
         if filepath:
             subprocess.call(["vim", filepath])
+            show_file(filepath)
             print("Created: {0}, {1}".format(args.element_type, filepath))
         else:
             print("Failed to create new information element")
@@ -118,20 +134,6 @@ if "__main__" == __name__:
 
         tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
         logs_dir = "{0}/{1}".format(js.root_directory, 'LogEntries')
-
-        def open_file(file_dir, file_name):
-            file_name = file_name if ".md" in file_name \
-                else "{0}.md".format(file_name)
-            filepath = "{0}/{1}".format(file_dir, file_name)
-
-            if not os.path.isfile(filepath):
-                raise IOError("File does not exist! {0}".format(filepath))
-
-            # Previews the markdown. This will require you to change the
-            # mimeapps.list setting file in order to chose your markdown preview
-            # tool.
-            filepath_browser = "file://{0}".format(filepath)
-            webbrowser.open(filepath_browser)
 
         def convert_file_to_json(src_file):
             """
@@ -172,7 +174,7 @@ if "__main__" == __name__:
                 tag = tag_pattern.search(tag_file).group(1)
                 print(tag)
         elif args.show_type == 'tag':
-            open_file(tags_dir, args.tag_name)
+            show_file(create_filepath(tags_dir, args.tag_name))
         elif args.show_type == 'logs':
             entries = []
 
@@ -209,14 +211,14 @@ if "__main__" == __name__:
 
                 if any([args.tag.lower() in tag.lower()
                     for tag in json_rep['tags']]):
-                    open_file(logs_dir, log_file)
+                    show_file(create_filepath(logs_dir, log_file))
                     is_found = True
                     break
 
             if not is_found:
                 print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
-            open_file(logs_dir, args.log_entry_name)
+            show_file(create_filepath(logs_dir, args.log_entry_name))
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
