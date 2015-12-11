@@ -47,6 +47,11 @@ if "__main__" == __name__:
     parser_show_logs = subparsers_show.add_parser('logs', help='List all logs')
     parser_show_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
 
+    parser_show_lastlog = subparsers_show.add_parser('lastlog',
+            help='Open last log entry in the browser')
+    parser_show_lastlog.add_argument('-t', '--tag', nargs='?', required=True,
+            help='Tag to search')
+
     parser_show_log = subparsers_show.add_parser('log', help='Open log entry in the browser')
     parser_show_log.add_argument('log_entry_name', help='Log name')
 
@@ -115,7 +120,9 @@ if "__main__" == __name__:
         logs_dir = "{0}/{1}".format(js.root_directory, 'LogEntries')
 
         def open_file(file_dir, file_name):
-            filepath = "{0}/{1}.md".format(file_dir, file_name)
+            file_name = file_name if ".md" in file_name \
+                else "{0}.md".format(file_name)
+            filepath = "{0}/{1}".format(file_dir, file_name)
 
             if not os.path.isfile(filepath):
                 raise IOError("File does not exist! {0}".format(filepath))
@@ -126,6 +133,38 @@ if "__main__" == __name__:
             filepath_browser = "file://{0}".format(filepath)
             webbrowser.open(filepath_browser)
 
+        def convert_file_to_json(src_file):
+            """
+            Form a json representation of a log file.
+            """
+            d = src_file.read().split('\n')
+
+            def parse_metadata(line):
+                """
+                Looking for Author, Created, Version, Tags
+
+                :param line: line for metadata e.g. "Author: John Doe"
+                :type line: string
+
+                :return: (key string, value string)
+                """
+                m = re.search('^(Author|Created|Version|Tags): (.*)', line)
+                return m.group(1).lower(), m.group(2)
+
+            t = (parse_metadata(d[i]) for i in range(0, 4))
+            response = dict(t)
+            response['tags'] = response['tags'].split(', ')
+            response['body'] = "\n".join(d[5:])
+            return response
+
+        def convert_json_to_summary(src_json):
+            """
+            Form a summary representation of the log file.
+            """
+            # Clip the body
+            clip = src_json['body'].split('\n')[0][0:250]
+            return "\n".join([log_file, ", ".join(src_json['tags']), clip])
+
         if args.show_type == 'tags':
             tag_pattern = re.compile('(\w*)\.md')
 
@@ -135,38 +174,6 @@ if "__main__" == __name__:
         elif args.show_type == 'tag':
             open_file(tags_dir, args.tag_name)
         elif args.show_type == 'logs':
-            def convert_file_to_json(src_file):
-                """
-                Form a json representation of a log file.
-                """
-                d = src_file.read().split('\n')
-
-                def parse_metadata(line):
-                    """
-                    Looking for Author, Created, Version, Tags
-
-                    :param line: line for metadata e.g. "Author: John Doe"
-                    :type line: string
-
-                    :return: (key string, value string)
-                    """
-                    m = re.search('^(Author|Created|Version|Tags): (.*)', line)
-                    return m.group(1).lower(), m.group(2)
-
-                t = (parse_metadata(d[i]) for i in range(0, 4))
-                response = dict(t)
-                response['tags'] = response['tags'].split(', ')
-                response['body'] = "\n".join(d[5:])
-                return response
-
-            def convert_json_to_summary(src_json):
-                """
-                Form a summary representation of the log file.
-                """
-                # Clip the body
-                clip = src_json['body'].split('\n')[0][0:250]
-                return "\n".join([log_file, ", ".join(src_json['tags']), clip])
-
             entries = []
 
             # 1. Go through each log file
@@ -191,6 +198,19 @@ if "__main__" == __name__:
                 print("\n\nLog entries found: {0}".format(len(entries)))
             else:
                 print("No log entries found")
+        elif args.show_type == 'lastlog':
+            for log_file in sorted(os.listdir(logs_dir), reverse=True):
+                log_path = "{0}/{1}".format(logs_dir, log_file)
+
+                with open(log_path, 'r') as f:
+                    json_rep = convert_file_to_json(f)
+
+                if any([args.tag.lower() in tag.lower()
+                    for tag in json_rep['tags']]):
+                    open_file(logs_dir, log_file)
+                    break
+
+            print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
             open_file(logs_dir, args.log_entry_name)
         else:
