@@ -125,7 +125,8 @@ if "__main__" == __name__:
                     .format(args.element_type))
 
         if filepath:
-            subprocess.call(["vim", filepath])
+            editor = os.environ['EDITOR']
+            subprocess.call([editor, filepath])
             show_file(filepath)
             print("Created: {0}, {1}".format(args.element_type, filepath))
         else:

@@ -7,7 +7,8 @@ Jarvis is a personal information management project.  It is a tool to help colle
 Jarvis requires the following environmental variables to be configured:
 
 Variable Name | Description
---- | ---
+------------- | -----------
+EDITOR | The editor application name
 JARVIS_DIR_ROOT | The full path to the root directory of where all the content will be written to
 JARVIS_AUTHOR | The author of the content
 
