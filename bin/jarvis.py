@@ -39,6 +39,17 @@ if "__main__" == __name__:
     parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag element')
     parser_new_tag.add_argument('tag_name', help='Tag name')
 
+    # Edit actions
+    parser_edit = subparsers.add_parser('edit', help='Edit an information element')
+    subparsers_edit = parser_edit.add_subparsers(help='Types of information element',
+            dest='element_type')
+
+    parser_edit_log = subparsers_edit.add_parser('log', help='Edit an existing log entry')
+    parser_edit_log.add_argument('log_entry_name', help='Log name')
+
+    parser_edit_tag = subparsers_edit.add_parser('tag', help='Edit an existing tag element')
+    parser_edit_tag.add_argument('tag_name', help='Tag name')
+
     # Show actions
     parser_show = subparsers.add_parser('show', help='Show information elements')
     subparsers_show = parser_show.add_subparsers(help='Types of show actions',
@@ -131,6 +142,8 @@ if "__main__" == __name__:
             print("Created: {0}, {1}".format(args.element_type, filepath))
         else:
             print("Failed to create new information element")
+    elif args.action_name == 'edit':
+        print(args)
     elif args.action_name == 'show':
 
         tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
