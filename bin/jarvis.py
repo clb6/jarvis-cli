@@ -177,9 +177,6 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
-        tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
-        logs_dir = "{0}/{1}".format(js.root_directory, 'LogEntries')
-
         def convert_file_to_json(src_file):
             """
             Form a json representation of a log file.
@@ -215,11 +212,11 @@ if "__main__" == __name__:
         if args.show_type == 'tags':
             tag_pattern = re.compile('(\w*)\.md')
 
-            for tag_file in sorted(os.listdir(tags_dir)):
+            for tag_file in sorted(os.listdir(js.tags_directory)):
                 tag = tag_pattern.search(tag_file).group(1)
                 print(tag)
         elif args.show_type == 'tag':
-            show_file(create_filepath(tags_dir, args.tag_name))
+            show_file(create_filepath(js.tags_directory, args.tag_name))
         elif args.show_type == 'logs':
             entries = []
 
@@ -230,8 +227,8 @@ if "__main__" == __name__:
 
             # NOTE: The sort order is increasing in time because the most recent
             # should be visible at the new command prompt.
-            for log_file in sorted(os.listdir(logs_dir), reverse=False):
-                log_path = "{0}/{1}".format(logs_dir, log_file)
+            for log_file in sorted(os.listdir(js.logs_directory), reverse=False):
+                log_path = "{0}/{1}".format(js.logs_directory, log_file)
 
                 with open(log_path, 'r') as f:
                     json_rep = convert_file_to_json(f)
@@ -248,22 +245,22 @@ if "__main__" == __name__:
         elif args.show_type == 'lastlog':
             is_found = False
 
-            for log_file in sorted(os.listdir(logs_dir), reverse=True):
-                log_path = "{0}/{1}".format(logs_dir, log_file)
+            for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
+                log_path = "{0}/{1}".format(js.logs_directory, log_file)
 
                 with open(log_path, 'r') as f:
                     json_rep = convert_file_to_json(f)
 
                 if any([args.tag.lower() in tag.lower()
                     for tag in json_rep['tags']]):
-                    show_file(create_filepath(logs_dir, log_file))
+                    show_file(create_filepath(js.logs_directory, log_file))
                     is_found = True
                     break
 
             if not is_found:
                 print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
-            show_file(create_filepath(logs_dir, args.log_entry_name))
+            show_file(create_filepath(js.logs_directory, args.log_entry_name))
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
