@@ -16,6 +16,17 @@ class JarvisSettings(object):
     def root_directory(self):
         return self._env_dir_jarvis_root
 
+    def _create_directory(self, sub_directory):
+        return "{0}/{1}".format(self.root_directory, sub_directory)
+
+    @property
+    def logs_directory(self):
+        return self._create_directory('LogEntries')
+
+    @property
+    def tags_directory(self):
+        return self._create_directory('Tags')
+
     @property
     def author(self):
         return self._env_author
@@ -82,6 +93,15 @@ if "__main__" == __name__:
 
     js = JarvisSettings()
 
+    def open_file_in_editor(filepath):
+        editor = os.environ['EDITOR']
+        subprocess.call([editor, filepath])
+
+    def edit_file(filepath):
+        if not os.path.isfile(filepath):
+            raise IOError("File does not exist! {0}".format(filepath))
+        open_file_in_editor(filepath)
+
     def show_file(filepath):
         if not os.path.isfile(filepath):
             raise IOError("File does not exist! {0}".format(filepath))
@@ -136,14 +156,25 @@ if "__main__" == __name__:
                     .format(args.element_type))
 
         if filepath:
-            editor = os.environ['EDITOR']
-            subprocess.call([editor, filepath])
+            open_file_in_editor(filepath)
             show_file(filepath)
             print("Created: {0}, {1}".format(args.element_type, filepath))
         else:
             print("Failed to create new information element")
     elif args.action_name == 'edit':
-        print(args)
+
+        if args.element_type == 'log':
+            filepath = create_filepath(js.logs_directory, args.log_entry_name)
+        elif args.element_type == 'tag':
+            filepath = create_filepath(js.tags_directory, args.tag_name)
+        else:
+            raise NotImplementedError("Unknown information type: {0}"
+                    .format(args.element_type))
+
+        edit_file(filepath)
+        show_file(filepath)
+        print("Editted: {0}, {1}".format(args.element_type, filepath))
+
     elif args.action_name == 'show':
 
         tags_dir = "{0}/{1}".format(js.root_directory, 'Tags')
