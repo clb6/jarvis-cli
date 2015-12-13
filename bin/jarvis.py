@@ -71,8 +71,7 @@ if "__main__" == __name__:
 
     parser_show_lastlog = subparsers_show.add_parser('lastlog',
             help='Open last log entry in the browser')
-    parser_show_lastlog.add_argument('-t', '--tag', nargs='?', required=True,
-            help='Tag to search')
+    parser_show_lastlog.add_argument('-t', '--tag', nargs='?', help='Tag to search')
 
     parser_show_log = subparsers_show.add_parser('log', help='Open log entry in the browser')
     parser_show_log.add_argument('log_entry_name', help='Log name')
@@ -246,16 +245,22 @@ if "__main__" == __name__:
             is_found = False
 
             for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
-                log_path = "{0}/{1}".format(js.logs_directory, log_file)
+                log_path = create_filepath(js.logs_directory, log_file)
 
-                with open(log_path, 'r') as f:
-                    json_rep = convert_file_to_json(f)
+                if args.tag:
+                    with open(log_path, 'r') as f:
+                        json_rep = convert_file_to_json(f)
 
-                if any([args.tag.lower() in tag.lower()
-                    for tag in json_rep['tags']]):
-                    show_file(create_filepath(js.logs_directory, log_file))
+                    if any([args.tag.lower() in tag.lower()
+                        for tag in json_rep['tags']]):
+                        show_file(log_path)
+                        is_found = True
+                        break
+                else:
+                    show_file(log_path)
                     is_found = True
                     break
+
 
             if not is_found:
                 print("There is no log entry for \"{0}\"".format(args.tag))
