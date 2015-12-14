@@ -36,6 +36,33 @@ class JarvisSettings(object):
         return self._env_version
 
 
+def convert_file_to_json(file_string):
+    """
+    Form a json representation of a log file.
+
+    :param file_string: all of file content
+    :type file_string: string
+    """
+    (metadata, body) = file_string.split('\n\n', maxsplit=1)
+
+    def parse_metadata(line):
+        """
+        :param line: line for metadata e.g. "Author: John Doe"
+        :type line: string
+
+        :return: (key string, value string)
+        """
+        m = re.search('^(\w*): (.*)', line)
+        return m.group(1).lower(), m.group(2)
+
+    t = [ parse_metadata(line) for line in metadata.split('\n') ]
+
+    response = dict(t)
+    response['tags'] = response['tags'].split(', ')
+    response['body'] = body
+    return response
+
+
 if "__main__" == __name__:
     parser = argparse.ArgumentParser(description='Jarvis is used for personal information management')
 
@@ -176,30 +203,6 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
-        def convert_file_to_json(src_file):
-            """
-            Form a json representation of a log file.
-            """
-            d = src_file.read().split('\n')
-
-            def parse_metadata(line):
-                """
-                Looking for Author, Created, Version, Tags
-
-                :param line: line for metadata e.g. "Author: John Doe"
-                :type line: string
-
-                :return: (key string, value string)
-                """
-                m = re.search('^(Author|Created|Version|Tags): (.*)', line)
-                return m.group(1).lower(), m.group(2)
-
-            t = (parse_metadata(d[i]) for i in range(0, 4))
-            response = dict(t)
-            response['tags'] = response['tags'].split(', ')
-            response['body'] = "\n".join(d[5:])
-            return response
-
         def convert_json_to_summary(src_json):
             """
             Form a summary representation of the log file.
@@ -230,7 +233,7 @@ if "__main__" == __name__:
                 log_path = "{0}/{1}".format(js.logs_directory, log_file)
 
                 with open(log_path, 'r') as f:
-                    json_rep = convert_file_to_json(f)
+                    json_rep = convert_file_to_json(f.read())
 
                 if not args.tag or any([args.tag.lower() in tag.lower()
                     for tag in json_rep['tags']]):
@@ -249,7 +252,7 @@ if "__main__" == __name__:
 
                 if args.tag:
                     with open(log_path, 'r') as f:
-                        json_rep = convert_file_to_json(f)
+                        json_rep = convert_file_to_json(f.read())
 
                     if any([args.tag.lower() in tag.lower()
                         for tag in json_rep['tags']]):
@@ -260,7 +263,6 @@ if "__main__" == __name__:
                     show_file(log_path)
                     is_found = True
                     break
-
 
             if not is_found:
                 print("There is no log entry for \"{0}\"".format(args.tag))
