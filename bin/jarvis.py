@@ -45,8 +45,21 @@ def convert_file_to_json(file_string):
     """
     Form a json representation of a log file.
 
+    Example of return response:
+
+    {
+        "author": "John Doe",
+        "created": "2015-12-12T16:22:41",
+        "occurred": "2015-11-25T00:00:00",
+        "version": "0.2.0",
+        "tags": ["Weather", "HelloWorld"],
+        "body": "Today was a bright and sunny day!"
+    }
+
     :param file_string: all of file content
     :type file_string: string
+
+    :return: json
     """
     (metadata, body) = file_string.split('\n\n', maxsplit=1)
 
