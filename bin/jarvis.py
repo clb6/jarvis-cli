@@ -10,7 +10,8 @@ class JarvisSettings(object):
         # TODO: Make a test mode where it writes to a test directory.
         self._env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
         self._env_author = os.environ['JARVIS_AUTHOR']
-        self._env_version = "0.1.0"
+        self._version_log = "0.2.0"
+        self._version_tag = "0.1.0"
 
     @property
     def root_directory(self):
@@ -32,8 +33,12 @@ class JarvisSettings(object):
         return self._env_author
 
     @property
-    def document_version(self):
-        return self._env_version
+    def log_version(self):
+        return self._version_log
+
+    @property
+    def tag_version(self):
+        return self._version_tag
 
 
 def convert_file_to_json(file_string):
@@ -146,31 +151,39 @@ if "__main__" == __name__:
     if args.action_name == 'new':
         created = datetime.utcnow().replace(microsecond=0)
 
-        def create_stub_file(subdir_name, filename):
-            dir_target = "{0}/{1}".format(js.root_directory, subdir_name)
-
+        def create_stub_file(dir_target, filename, metadata):
             filepath = create_filepath(dir_target, filename)
 
             if os.path.isfile(filepath):
                 raise IOError("File already exists! {0}".format(filepath))
 
             with open(filepath, 'w') as f:
-                f.write("Author: {0}\n".format(js.author))
-                f.write("Created: {0}\n".format(created.isoformat()))
-                f.write("Version: {0}\n".format(js.document_version))
-                f.write("Tags: \n")
+                for metadatum in metadata:
+                    f.write(metadatum)
 
             return filepath
 
         if args.element_type == 'log':
+            metadata = [ "Author: {0}\n".format(js.author),
+                    "Created: {0}\n".format(created.isoformat()),
+                    "Occurred: {0}\n".format(created.isoformat()),
+                    "Version: {0}\n".format(js.log_version),
+                    "Tags: \n" ]
+
             # datetime.fromtimestamp(0) is not Unix epoch and returns
             # 1969-12-31 19:00 instead.
             epoch = datetime(1970, 1, 1)
 
-            filepath = create_stub_file('LogEntries',
-                str(int((created - epoch).total_seconds())))
+            filepath = create_stub_file(js.logs_directory,
+                str(int((created - epoch).total_seconds())), metadata)
         elif args.element_type == 'tag':
-            filepath = create_stub_file('Tags', args.tag_name)
+            metadata = [ "Author: {0}\n".format(js.author),
+                    "Created: {0}\n".format(created.isoformat()),
+                    "Version: {0}\n".format(js.tag_version),
+                    "Tags: \n" ]
+
+            filepath = create_stub_file(js.tags_directory, args.tag_name,
+                    metadata)
 
             # Add the title which should be the tag name
             with open(filepath, 'a') as f:
