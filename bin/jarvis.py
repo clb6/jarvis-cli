@@ -41,7 +41,7 @@ class JarvisSettings(object):
         return self._version_tag
 
 
-def convert_file_to_json(file_string):
+def convert_file_to_json(file_path):
     """
     Form a json representation of a log file.
 
@@ -56,29 +56,30 @@ def convert_file_to_json(file_string):
         "body": "Today was a bright and sunny day!"
     }
 
-    :param file_string: all of file content
-    :type file_string: string
+    :param file_path: full path of the file
+    :type file_path: string
 
     :return: json
     """
-    (metadata, body) = file_string.split('\n\n', maxsplit=1)
+    with open(file_path, 'r') as f:
+        (metadata, body) = f.read().split('\n\n', maxsplit=1)
 
-    def parse_metadata(line):
-        """
-        :param line: line for metadata e.g. "Author: John Doe"
-        :type line: string
+        def parse_metadata(line):
+            """
+            :param line: line for metadata e.g. "Author: John Doe"
+            :type line: string
 
-        :return: (key string, value string)
-        """
-        m = re.search('^(\w*): (.*)', line)
-        return m.group(1).lower(), m.group(2)
+            :return: (key string, value string)
+            """
+            m = re.search('^(\w*): (.*)', line)
+            return m.group(1).lower(), m.group(2)
 
-    t = [ parse_metadata(line) for line in metadata.split('\n') ]
+        t = [ parse_metadata(line) for line in metadata.split('\n') ]
 
-    response = dict(t)
-    response['tags'] = response['tags'].split(', ')
-    response['body'] = body
-    return response
+        response = dict(t)
+        response['tags'] = response['tags'].split(', ')
+        response['body'] = body
+        return response
 
 class JarvisTagError(RuntimeError):
     pass
@@ -281,9 +282,7 @@ if "__main__" == __name__:
             # should be visible at the new command prompt.
             for log_file in sorted(os.listdir(js.logs_directory), reverse=False):
                 log_path = "{0}/{1}".format(js.logs_directory, log_file)
-
-                with open(log_path, 'r') as f:
-                    json_rep = convert_file_to_json(f.read())
+                json_rep = convert_file_to_json(log_path)
 
                 if not args.tag or any([args.tag.lower() in tag.lower()
                     for tag in json_rep['tags']]):
@@ -301,8 +300,7 @@ if "__main__" == __name__:
                 log_path = create_filepath(js.logs_directory, log_file)
 
                 if args.tag:
-                    with open(log_path, 'r') as f:
-                        json_rep = convert_file_to_json(f.read())
+                    json_rep = convert_file_to_json(log_path)
 
                     if any([args.tag.lower() in tag.lower()
                         for tag in json_rep['tags']]):

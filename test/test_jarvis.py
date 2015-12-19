@@ -9,14 +9,11 @@ JarvisSettings = namedtuple('JarvisSettings', ['tags_directory'])
 class TestJarvis(unittest.TestCase):
 
     def setUp(self):
-        with open('fixtures/test_log.md', 'r') as f:
-            self.test_log = f.read()
-
         self.js = JarvisSettings('fixtures/tags')
 
     def test_convert_file_to_json(self):
         try:
-            j = convert_file_to_json(self.test_log)
+            j = convert_file_to_json('fixtures/test_log.md')
             # Version 0.2.0
             expected_keys = sorted(['version', 'created', 'body', 'tags',
                 'occurred', 'author'])
