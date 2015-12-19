@@ -182,6 +182,7 @@ if "__main__" == __name__:
             open_file_in_editor(filepath)
             show_file(filepath)
             print("Created: {0}, {1}".format(element_type, filepath))
+            check_and_create_missing_tags(filepath)
         else:
             print("Failed to create new information element")
 
@@ -214,6 +215,16 @@ if "__main__" == __name__:
             f.write("\n# {0}\n".format(tag_name))
 
         create_file(filepath, 'tag')
+
+    def check_and_create_missing_tags(filepath):
+        json_rep = convert_file_to_json(filepath)
+        new_tags = set(json_rep['tags'])
+        existing_tags = set(get_tags(js))
+
+        # TODO: Need to handle case when not all the tags gets created. At least
+        # print the name of the tags that didn't get created.
+        for tag_name in new_tags.difference(existing_tags):
+            create_tag(tag_name)
 
 
     if args.action_name == 'new':
