@@ -80,6 +80,21 @@ def convert_file_to_json(file_string):
     response['body'] = body
     return response
 
+class JarvisTagError(RuntimeError):
+    pass
+
+def get_tags(jarvis_settings):
+    tag_pattern = re.compile('([\w&]*)\.md')
+
+    def parse_tag(tag_file_name):
+        try:
+            return tag_pattern.search(tag_file_name).group(1)
+        except:
+            raise JarvisTagError("Unexpected tag file name: {0}".format(tag_file_name))
+
+    return [ parse_tag(tag_file_name) for tag_file_name in
+            sorted(os.listdir(jarvis_settings.tags_directory)) ]
+
 
 if "__main__" == __name__:
     parser = argparse.ArgumentParser(description='Jarvis is used for personal information management')
@@ -238,10 +253,7 @@ if "__main__" == __name__:
             return "\n".join([log_file, ", ".join(src_json['tags']), clip])
 
         if args.show_type == 'tags':
-            tag_pattern = re.compile('(\w*)\.md')
-
-            for tag_file in sorted(os.listdir(js.tags_directory)):
-                tag = tag_pattern.search(tag_file).group(1)
+            for tag in get_tags(js):
                 print(tag)
         elif args.show_type == 'tag':
             show_file(create_filepath(js.tags_directory, args.tag_name))
