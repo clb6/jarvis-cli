@@ -176,22 +176,50 @@ if "__main__" == __name__:
                 else "{0}.md".format(file_name)
         return "{0}/{1}".format(file_dir, file_name)
 
-    if args.action_name == 'new':
+    def create_file(filepath, element_type):
+        if filepath:
+            open_file_in_editor(filepath)
+            show_file(filepath)
+            print("Created: {0}, {1}".format(element_type, filepath))
+        else:
+            print("Failed to create new information element")
+
+    def create_stub_file(dir_target, filename, metadata):
+        filepath = create_filepath(dir_target, filename)
+
+        if os.path.isfile(filepath):
+            raise IOError("File already exists! {0}".format(filepath))
+
+        with open(filepath, 'w') as f:
+            for metadatum in metadata:
+                f.write(metadatum)
+
+        return filepath
+
+    def create_tag(tag_name):
         created = datetime.utcnow().replace(microsecond=0)
 
-        def create_stub_file(dir_target, filename, metadata):
-            filepath = create_filepath(dir_target, filename)
+        metadata = [ "Author: {0}\n".format(js.author),
+                "Created: {0}\n".format(created.isoformat()),
+                "Version: {0}\n".format(js.tag_version),
+                "Tags: \n" ]
 
-            if os.path.isfile(filepath):
-                raise IOError("File already exists! {0}".format(filepath))
+        filepath = create_stub_file(js.tags_directory, tag_name, metadata)
 
-            with open(filepath, 'w') as f:
-                for metadatum in metadata:
-                    f.write(metadatum)
+        # Add the title which should be the tag name
+        with open(filepath, 'a') as f:
+            # TODO: Would be very cool to reinforce camel case for the file
+            # name and canonical for title.
+            f.write("\n# {0}\n".format(tag_name))
 
-            return filepath
+        create_file(filepath, 'tag')
+
+
+    if args.action_name == 'new':
 
         if args.element_type == 'log':
+            created = datetime.utcnow().replace(microsecond=0)
+
             metadata = [ "Author: {0}\n".format(js.author),
                     "Created: {0}\n".format(created.isoformat()),
                     "Occurred: {0}\n".format(created.isoformat()),
@@ -204,30 +232,14 @@ if "__main__" == __name__:
 
             filepath = create_stub_file(js.logs_directory,
                 str(int((created - epoch).total_seconds())), metadata)
+
+            create_file(filepath, args.element_type)
         elif args.element_type == 'tag':
-            metadata = [ "Author: {0}\n".format(js.author),
-                    "Created: {0}\n".format(created.isoformat()),
-                    "Version: {0}\n".format(js.tag_version),
-                    "Tags: \n" ]
-
-            filepath = create_stub_file(js.tags_directory, args.tag_name,
-                    metadata)
-
-            # Add the title which should be the tag name
-            with open(filepath, 'a') as f:
-                # TODO: Would be very cool to reinforce camel case for the file
-                # name and canonical for title.
-                f.write("\n# {0}\n".format(args.tag_name))
+            create_tag(args.tag_name)
         else:
             raise NotImplementedError("Unknown information type: {0}"
                     .format(args.element_type))
 
-        if filepath:
-            open_file_in_editor(filepath)
-            show_file(filepath)
-            print("Created: {0}, {1}".format(args.element_type, filepath))
-        else:
-            print("Failed to create new information element")
     elif args.action_name == 'edit':
 
         if args.element_type == 'log':
