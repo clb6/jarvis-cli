@@ -78,6 +78,9 @@ def convert_file_to_json(file_path):
 
         response = dict(t)
         response['tags'] = response['tags'].split(', ')
+        # Handle scenario when there are no tags which will return an empty
+        # string.
+        response['tags'] = [ tag for tag in response['tags'] if tag ]
         response['body'] = body
         return response
 

@@ -22,6 +22,10 @@ class TestJarvis(unittest.TestCase):
         except Exception as e:
             self.fail("Unexpected error while parsing test_log")
 
+    def test_convert_file_to_json_for_no_tags_case(self):
+        j = convert_file_to_json('fixtures/tags/TestA.md')
+        self.assertListEqual([], j['tags'])
+
     def test_get_tags(self):
         expected_tags = ['TestA', 'TestB&C']
         actual_tags = get_tags(self.js)
