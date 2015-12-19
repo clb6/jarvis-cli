@@ -268,6 +268,7 @@ if "__main__" == __name__:
         edit_file(filepath)
         show_file(filepath)
         print("Editted: {0}, {1}".format(args.element_type, filepath))
+        check_and_create_missing_tags(filepath)
 
     elif args.action_name == 'show':
 
