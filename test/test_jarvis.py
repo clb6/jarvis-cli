@@ -14,7 +14,7 @@ class TestJarvis(unittest.TestCase):
 
         self.js = JarvisSettings('fixtures/tags')
 
-    def test_convert_log(self):
+    def test_convert_file_to_json(self):
         try:
             j = convert_file_to_json(self.test_log)
             # Version 0.2.0
