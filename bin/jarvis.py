@@ -84,15 +84,38 @@ def convert_file_to_json(file_path):
         response['body'] = body
         return response
 
+def create_filepath(file_dir, file_name):
+    """
+    TODO: Need test
+    """
+    file_name = file_name if ".md" in file_name else "{0}.md".format(file_name)
+    return "{0}/{1}".format(file_dir, file_name)
+
 class JarvisTagError(RuntimeError):
     pass
 
 def get_tags(jarvis_settings):
+    """
+    :return: iterable of just tag names
+    """
+    return map(lambda e: e[0], get_tags_with_relations(jarvis_settings))
+
+def get_tags_with_relations(jarvis_settings):
+    """
+    :return: list of (tag name, list of related tags)
+    """
     tag_pattern = re.compile('([\w&]*)\.md')
 
     def parse_tag(tag_file_name):
+        """
+        :return: tag name, list of related tags
+        """
         try:
-            return tag_pattern.search(tag_file_name).group(1)
+            filepath = create_filepath(jarvis_settings.tags_directory,
+                    tag_file_name)
+            json_rep = convert_file_to_json(filepath)
+            return tag_pattern.search(tag_file_name).group(1), \
+                json_rep['tags']
         except:
             raise JarvisTagError("Unexpected tag file name: {0}".format(tag_file_name))
 
@@ -174,11 +197,6 @@ if "__main__" == __name__:
         # tool.
         filepath_browser = "file://{0}".format(filepath)
         webbrowser.open(filepath_browser)
-
-    def create_filepath(file_dir, file_name):
-        file_name = file_name if ".md" in file_name \
-                else "{0}.md".format(file_name)
-        return "{0}/{1}".format(file_dir, file_name)
 
     def create_file(filepath, element_type):
         if filepath:
@@ -281,8 +299,8 @@ if "__main__" == __name__:
             return "\n".join([log_file, ", ".join(src_json['tags']), clip])
 
         if args.show_type == 'tags':
-            for tag in get_tags(js):
-                print(tag)
+            for tag, related_tags in get_tags_with_relations(js):
+                print("{0} -> {1}".format(tag, ', '.join(related_tags)))
         elif args.show_type == 'tag':
             show_file(create_filepath(js.tags_directory, args.tag_name))
         elif args.show_type == 'logs':

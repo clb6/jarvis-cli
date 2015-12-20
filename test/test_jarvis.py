@@ -28,7 +28,7 @@ class TestJarvis(unittest.TestCase):
 
     def test_get_tags(self):
         expected_tags = ['TestA', 'TestB&C']
-        actual_tags = get_tags(self.js)
+        actual_tags = list(get_tags(self.js))
         self.assertListEqual(expected_tags, actual_tags)
 
 
