@@ -291,14 +291,6 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
-        def convert_json_to_summary(src_json, log_filename):
-            """
-            Form a summary representation of the log file.
-            """
-            # Clip the body
-            clip = src_json['body'].split('\n')[0][0:250]
-            return "\n".join([log_filename, ", ".join(src_json['tags']), clip])
-
         if args.show_type == 'tags':
             for tag, related_tags in get_tags_with_relations(js):
                 print("{0} -> {1}".format(tag, ', '.join(related_tags)))
@@ -327,6 +319,20 @@ if "__main__" == __name__:
 
                 return src_json
 
+            def create_summary(json_log):
+                """
+                Form a summary representation of the log file.
+                """
+                delta = (json_log['created'] - json_log['occurred']).total_seconds()
+                dates = "Occurred: {0}, Created: {1}, Delta: {2}hrs".format(
+                        json_log['occurred'].isoformat(),
+                        json_log['created'].isoformat(),
+                        int(delta/3600))
+                # Clip the body
+                clip = json_log['body'].split('\n')[0][0:250]
+                return "\n".join([json_log['log_filename'], dates,
+                    ", ".join(json_log['tags']), clip])
+
             json_logs = [ convert_to_json_log(convert_file_to_json(
                 "{0}/{1}".format(js.logs_directory, log_filename)), log_filename)
                 for log_filename in os.listdir(js.logs_directory) ]
@@ -336,8 +342,7 @@ if "__main__" == __name__:
             for json_log in sorted(json_logs, key=itemgetter('occurred')):
                 if not args.tag or any([args.tag.lower() in tag.lower()
                     for tag in json_log['tags']]):
-                    entries.append(convert_json_to_summary(json_log,
-                    json_log['log_filename']))
+                    entries.append(create_summary(json_log))
 
             if entries:
                 print("\n\n".join(entries))
