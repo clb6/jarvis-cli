@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, subprocess, argparse, re
+from operator import itemgetter
 import webbrowser
 from datetime import datetime
 
@@ -290,13 +291,13 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
-        def convert_json_to_summary(src_json):
+        def convert_json_to_summary(src_json, log_filename):
             """
             Form a summary representation of the log file.
             """
             # Clip the body
             clip = src_json['body'].split('\n')[0][0:250]
-            return "\n".join([log_file, ", ".join(src_json['tags']), clip])
+            return "\n".join([log_filename, ", ".join(src_json['tags']), clip])
 
         if args.show_type == 'tags':
             for tag, related_tags in get_tags_with_relations(js):
@@ -311,15 +312,32 @@ if "__main__" == __name__:
             # 3. Filter by tag if need be
             # 4. Print entries
 
-            # NOTE: The sort order is increasing in time because the most recent
-            # should be visible at the new command prompt.
-            for log_file in sorted(os.listdir(js.logs_directory), reverse=False):
-                log_path = "{0}/{1}".format(js.logs_directory, log_file)
-                json_rep = convert_file_to_json(log_path)
+            def iso_to_datetime(str_datetime):
+                return datetime.strptime(str_datetime, '%Y-%m-%dT%H:%M:%S')
 
+            def convert_to_json_log(src_json, log_filename):
+                src_json['created'] = iso_to_datetime(src_json['created'])
+                src_json['log_filename'] = log_filename
+
+                if src_json['version'] == '0.2.0':
+                    src_json['occurred'] = iso_to_datetime(src_json['occurred'])
+                else:
+                    # Temporary
+                    src_json['occurred'] = src_json['created']
+
+                return src_json
+
+            json_logs = [ convert_to_json_log(convert_file_to_json(
+                "{0}/{1}".format(js.logs_directory, log_filename)), log_filename)
+                for log_filename in os.listdir(js.logs_directory) ]
+
+            # Sort order is in increasing time by Occurred datetime. The most
+            # recent should be visible at the new command prompt.
+            for json_log in sorted(json_logs, key=itemgetter('occurred')):
                 if not args.tag or any([args.tag.lower() in tag.lower()
-                    for tag in json_rep['tags']]):
-                    entries.append(convert_json_to_summary(json_rep))
+                    for tag in json_log['tags']]):
+                    entries.append(convert_json_to_summary(json_log,
+                    json_log['log_filename']))
 
             if entries:
                 print("\n\n".join(entries))
