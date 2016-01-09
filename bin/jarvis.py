@@ -173,8 +173,8 @@ if "__main__" == __name__:
 
     parser_list_logs = subparsers_list.add_parser('logs', help='List all logs')
     parser_list_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
-
-
+    parser_list_logs.add_argument('-s', '--search', nargs='?', dest='search_term',
+            help='Search term')
 
     args = parser.parse_args()
 
@@ -375,17 +375,41 @@ if "__main__" == __name__:
 
             def is_tag_match(target_tag, json_log):
                 """
-                :rtype: Return True if no target tag to match against or if there
+                :return: Return True if no target tag to match against or if there
                 is a tag match else False
                 """
                 return not target_tag or any([target_tag.lower() in tag.lower()
                     for tag in json_log['tags']])
 
+            # This regex will look for a search term and grab 60 characters
+            # around the matched term.
+            search_regex = re.compile('.{{0,30}}\S*{0}\S*.{{0,30}}'.format(args.search_term),
+                    re.IGNORECASE) if args.search_term else None
+
+            def find_search_term(json_log):
+                """
+                :return: List of the matched strings
+                """
+                return [ m.group(0) for m in
+                        search_regex.finditer(json_log['body']) ]
+
             # Sort order is in increasing time by Occurred datetime. The most
             # recent should be visible at the new command prompt.
             for json_log in sorted(json_logs, key=itemgetter('occurred')):
                 if is_tag_match(args.tag, json_log):
-                    entries.append(create_summary(json_log))
+                    if search_regex:
+                        def format_matches(matches):
+                            if matches:
+                                return "\n".join([ "[{0}]: \"{1}\"".format(i, matches[i])
+                                    for i in range(0, len(matches)) ])
+                            else:
+                                return "No matches"
+
+                        entry = "\n\nSearch matches:\n".join([ create_summary(json_log),
+                             format_matches(find_search_term(json_log)) ])
+                        entries.append(entry)
+                    else:
+                        entries.append(create_summary(json_log))
 
             if entries:
                 print("\n\n".join(entries))
