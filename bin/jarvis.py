@@ -154,9 +154,6 @@ if "__main__" == __name__:
     subparsers_show = parser_show.add_subparsers(help='Types of show actions',
             dest='show_type')
 
-    parser_show_logs = subparsers_show.add_parser('logs', help='List all logs')
-    parser_show_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
-
     parser_show_lastlog = subparsers_show.add_parser('lastlog',
             help='Open last log entry in the browser')
     parser_show_lastlog.add_argument('-t', '--tag', nargs='?', help='Tag to search')
@@ -164,10 +161,20 @@ if "__main__" == __name__:
     parser_show_log = subparsers_show.add_parser('log', help='Open log entry in the browser')
     parser_show_log.add_argument('log_entry_name', help='Log name')
 
-    parser_show_tags = subparsers_show.add_parser('tags', help='List all tags')
-
     parser_show_tag = subparsers_show.add_parser('tag', help='Open tag in the browser')
     parser_show_tag.add_argument('tag_name', help='Tag name')
+
+    # List actions
+    parser_list = subparsers.add_parser('list', help='List information elements')
+    subparsers_list = parser_list.add_subparsers(help='Types of list actions',
+            dest='listing_type')
+
+    parser_list_tags = subparsers_list.add_parser('tags', help='List all tags')
+
+    parser_list_logs = subparsers_list.add_parser('logs', help='List all logs')
+    parser_list_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
+
+
 
     args = parser.parse_args()
 
@@ -291,12 +298,41 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
-        if args.show_type == 'tags':
+        if args.show_type == 'tag':
+            show_file(create_filepath(js.tags_directory, args.tag_name))
+        elif args.show_type == 'lastlog':
+            is_found = False
+
+            for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
+                log_path = create_filepath(js.logs_directory, log_file)
+
+                if args.tag:
+                    json_rep = convert_file_to_json(log_path)
+
+                    if any([args.tag.lower() in tag.lower()
+                        for tag in json_rep['tags']]):
+                        show_file(log_path)
+                        is_found = True
+                        break
+                else:
+                    show_file(log_path)
+                    is_found = True
+                    break
+
+            if not is_found:
+                print("There is no log entry for \"{0}\"".format(args.tag))
+        elif args.show_type == 'log':
+            show_file(create_filepath(js.logs_directory, args.log_entry_name))
+        else:
+            raise NotImplementedError("Unknown show type: {0}"
+                    .format(args.show_type))
+
+    elif args.action_name == 'list':
+
+        if args.listing_type == 'tags':
             for tag, related_tags in get_tags_with_relations(js):
                 print("{0} -> {1}".format(tag, ', '.join(related_tags)))
-        elif args.show_type == 'tag':
-            show_file(create_filepath(js.tags_directory, args.tag_name))
-        elif args.show_type == 'logs':
+        elif args.listing_type == 'logs':
             entries = []
 
             # 1. Go through each log file
@@ -349,29 +385,6 @@ if "__main__" == __name__:
                 print("\n\nLog entries found: {0}".format(len(entries)))
             else:
                 print("No log entries found")
-        elif args.show_type == 'lastlog':
-            is_found = False
-
-            for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
-                log_path = create_filepath(js.logs_directory, log_file)
-
-                if args.tag:
-                    json_rep = convert_file_to_json(log_path)
-
-                    if any([args.tag.lower() in tag.lower()
-                        for tag in json_rep['tags']]):
-                        show_file(log_path)
-                        is_found = True
-                        break
-                else:
-                    show_file(log_path)
-                    is_found = True
-                    break
-
-            if not is_found:
-                print("There is no log entry for \"{0}\"".format(args.tag))
-        elif args.show_type == 'log':
-            show_file(create_filepath(js.logs_directory, args.log_entry_name))
         else:
-            raise NotImplementedError("Unknown show type: {0}"
+            raise NotImplementedError("Unknown listing type: {0}"
                     .format(args.show_type))
