@@ -373,11 +373,18 @@ if "__main__" == __name__:
                 "{0}/{1}".format(js.logs_directory, log_filename)), log_filename)
                 for log_filename in os.listdir(js.logs_directory) ]
 
+            def is_tag_match(target_tag, json_log):
+                """
+                :rtype: Return True if no target tag to match against or if there
+                is a tag match else False
+                """
+                return not target_tag or any([target_tag.lower() in tag.lower()
+                    for tag in json_log['tags']])
+
             # Sort order is in increasing time by Occurred datetime. The most
             # recent should be visible at the new command prompt.
             for json_log in sorted(json_logs, key=itemgetter('occurred')):
-                if not args.tag or any([args.tag.lower() in tag.lower()
-                    for tag in json_log['tags']]):
+                if is_tag_match(args.tag, json_log):
                     entries.append(create_summary(json_log))
 
             if entries:
