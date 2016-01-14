@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os, subprocess, argparse, re
+from collections import namedtuple
 from operator import itemgetter
 import webbrowser
 from datetime import datetime
@@ -20,6 +21,10 @@ class JarvisSettings(object):
 
     def _create_directory(self, sub_directory):
         return "{0}/{1}".format(self.root_directory, sub_directory)
+
+    @property
+    def images_directory(self):
+        return self._create_directory('Images')
 
     @property
     def logs_directory(self):
@@ -91,6 +96,11 @@ def create_filepath(file_dir, file_name):
     """
     file_name = file_name if ".md" in file_name else "{0}.md".format(file_name)
     return "{0}/{1}".format(file_dir, file_name)
+
+JarvisContext = namedtuple('JarvisContext', ['file_name', 'file_path'])
+
+def create_context(file_dir, file_name):
+    return JarvisContext(file_name, create_filepath(file_dir, file_name))
 
 class JarvisTagError(RuntimeError):
     pass
@@ -195,6 +205,31 @@ if "__main__" == __name__:
         if not os.path.isfile(filepath):
             raise IOError("File does not exist! {0}".format(filepath))
         open_file_in_editor(filepath)
+
+    def show_file_with_images(context):
+        if not os.path.isfile(context.file_path):
+            raise IOError("File does not exist! {0}".format(context.file_path))
+
+        images_pattern = '!\[(\w*)\]\(([\w.\/]*)\)'
+        # The "\1" and "\2" gets replaced with the regex groups.
+        images_link = "<img src=\"file://{0}/\\2\" alt=\"\\1\" height=\"750px\" width=\"750px\" />" \
+            .format(js.images_directory)
+
+        # Look for markdown images and transform to html images with the
+        # appropriate directory.  Plus I can resize the image here.
+
+        with open(context.file_path, 'r') as f:
+            old_text = f.read()
+
+        temp = "/tmp/{0}.md".format(context.file_name)
+
+        with open(temp, 'w') as f:
+            f.write(re.sub(images_pattern, images_link, old_text))
+
+        # Previews the markdown. This will require you to change the
+        # mimeapps.list setting file in order to chose your markdown preview
+        # tool.
+        webbrowser.open("file://{0}".format(temp))
 
     def show_file(filepath):
         if not os.path.isfile(filepath):
@@ -322,7 +357,8 @@ if "__main__" == __name__:
             if not is_found:
                 print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
-            show_file(create_filepath(js.logs_directory, args.log_entry_name))
+            show_file_with_images(create_context(js.logs_directory,
+                args.log_entry_name))
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
