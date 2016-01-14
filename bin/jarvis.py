@@ -201,10 +201,10 @@ if "__main__" == __name__:
         editor = os.environ['EDITOR']
         subprocess.call([editor, filepath])
 
-    def edit_file(filepath):
-        if not os.path.isfile(filepath):
-            raise IOError("File does not exist! {0}".format(filepath))
-        open_file_in_editor(filepath)
+    def edit_file(context):
+        if not os.path.isfile(context.file_path):
+            raise IOError("File does not exist! {0}".format(context.file_path))
+        open_file_in_editor(context.file_path)
 
     def show_file_with_images(context):
         if not os.path.isfile(context.file_path):
@@ -319,38 +319,39 @@ if "__main__" == __name__:
     elif args.action_name == 'edit':
 
         if args.element_type == 'log':
-            filepath = create_filepath(js.logs_directory, args.log_entry_name)
+            context = create_context(js.logs_directory, args.log_entry_name)
         elif args.element_type == 'tag':
-            filepath = create_filepath(js.tags_directory, args.tag_name)
+            context = create_context(js.tags_directory, args.tag_name)
         else:
             raise NotImplementedError("Unknown information type: {0}"
                     .format(args.element_type))
 
-        edit_file(filepath)
-        show_file(filepath)
-        print("Editted: {0}, {1}".format(args.element_type, filepath))
-        check_and_create_missing_tags(filepath)
+        edit_file(context)
+        show_file_with_images(context)
+        print("Editted: {0}, {1}".format(args.element_type, context.file_path))
+        check_and_create_missing_tags(context.file_path)
 
     elif args.action_name == 'show':
 
         if args.show_type == 'tag':
-            show_file(create_filepath(js.tags_directory, args.tag_name))
+            show_file_with_images(create_context(js.tags_directory,
+                args.tag_name))
         elif args.show_type == 'lastlog':
             is_found = False
 
             for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
-                log_path = create_filepath(js.logs_directory, log_file)
+                context = create_context(js.logs_directory, log_file)
 
                 if args.tag:
                     json_rep = convert_file_to_json(log_path)
 
                     if any([args.tag.lower() in tag.lower()
                         for tag in json_rep['tags']]):
-                        show_file(log_path)
+                        show_file_with_images(context)
                         is_found = True
                         break
                 else:
-                    show_file(log_path)
+                    show_file_with_images(context)
                     is_found = True
                     break
 
