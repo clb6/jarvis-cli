@@ -231,27 +231,14 @@ if "__main__" == __name__:
         # tool.
         webbrowser.open("file://{0}".format(temp))
 
-    def show_file(filepath):
-        if not os.path.isfile(filepath):
-            raise IOError("File does not exist! {0}".format(filepath))
+    def create_file(context, element_type):
+        open_file_in_editor(context.file_path)
+        show_file_with_images(context)
+        print("Created: {0}, {1}".format(element_type, context.file_path))
+        check_and_create_missing_tags(context.file_path)
 
-        # Previews the markdown. This will require you to change the
-        # mimeapps.list setting file in order to chose your markdown preview
-        # tool.
-        filepath_browser = "file://{0}".format(filepath)
-        webbrowser.open(filepath_browser)
-
-    def create_file(filepath, element_type):
-        if filepath:
-            open_file_in_editor(filepath)
-            show_file(filepath)
-            print("Created: {0}, {1}".format(element_type, filepath))
-            check_and_create_missing_tags(filepath)
-        else:
-            print("Failed to create new information element")
-
-    def create_stub_file(dir_target, filename, metadata):
-        filepath = create_filepath(dir_target, filename)
+    def create_stub_file(context, metadata):
+        filepath = context.file_path
 
         if os.path.isfile(filepath):
             raise IOError("File already exists! {0}".format(filepath))
@@ -270,15 +257,16 @@ if "__main__" == __name__:
                 "Version: {0}\n".format(js.tag_version),
                 "Tags: \n" ]
 
-        filepath = create_stub_file(js.tags_directory, tag_name, metadata)
+        context = create_context(js.tags_directory, tag_name)
+        create_stub_file(context, metadata)
 
         # Add the title which should be the tag name
-        with open(filepath, 'a') as f:
+        with open(context.file_path, 'a') as f:
             # TODO: Would be very cool to reinforce camel case for the file
             # name and canonical for title.
             f.write("\n# {0}\n".format(tag_name))
 
-        create_file(filepath, 'tag')
+        create_file(context, 'tag')
 
     def check_and_create_missing_tags(filepath):
         json_rep = convert_file_to_json(filepath)
@@ -306,10 +294,11 @@ if "__main__" == __name__:
             # 1969-12-31 19:00 instead.
             epoch = datetime(1970, 1, 1)
 
-            filepath = create_stub_file(js.logs_directory,
-                str(int((created - epoch).total_seconds())), metadata)
+            context = create_context(js.logs_directory,
+                    str(int((created - epoch).total_seconds())))
+            create_stub_file(context, metadata)
 
-            create_file(filepath, args.element_type)
+            create_file(context, args.element_type)
         elif args.element_type == 'tag':
             create_tag(args.tag_name)
         else:
