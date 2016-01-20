@@ -16,7 +16,7 @@ class TestJarvis(unittest.TestCase):
             j = convert_file_to_json('fixtures/test_log.md')
             # Version 0.2.0
             expected_keys = sorted(['version', 'created', 'body', 'tags',
-                'occurred', 'author'])
+                'occurred', 'author', 'parent', 'todo', 'setting'])
             actual_keys = sorted(j.keys())
             self.assertListEqual(expected_keys, actual_keys)
         except Exception as e:

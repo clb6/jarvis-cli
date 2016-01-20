@@ -12,7 +12,7 @@ class JarvisSettings(object):
         # TODO: Make a test mode where it writes to a test directory.
         self._env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
         self._env_author = os.environ['JARVIS_AUTHOR']
-        self._version_log = "0.2.0"
+        self._version_log = "0.4.0"
         self._version_tag = "0.1.0"
 
     @property
@@ -59,6 +59,10 @@ def convert_file_to_json(file_path):
         "occurred": "2015-11-25T00:00:00",
         "version": "0.2.0",
         "tags": ["Weather", "HelloWorld"],
+        "parent": "123456789",
+        "todo": "Read *War and Peace*",
+        "setting": "Finished reading *The Cat and the Hat* while watching a very
+        orange sunset.",
         "body": "Today was a bright and sunny day!"
     }
 
@@ -284,11 +288,13 @@ if "__main__" == __name__:
         if args.element_type == 'log':
             created = datetime.utcnow().replace(microsecond=0)
 
-            metadata = [ "Author: {0}\n".format(js.author),
-                    "Created: {0}\n".format(created.isoformat()),
-                    "Occurred: {0}\n".format(created.isoformat()),
-                    "Version: {0}\n".format(js.log_version),
-                    "Tags: \n" ]
+            metadata = [ ("Author", js.author), ("Created", created.isoformat()),
+                    ("Occurred", created.isoformat()), ("Version", js.log_version),
+                    ("Tags", None), ("Parent", None), ("ToDo", None),
+                    ("Setting", None) ]
+
+            metadata = [ "{0}: {1}\n".format(k, v if v else "")
+                    for k, v in metadata ] 
 
             # datetime.fromtimestamp(0) is not Unix epoch and returns
             # 1969-12-31 19:00 instead.
