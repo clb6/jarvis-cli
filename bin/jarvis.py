@@ -82,15 +82,17 @@ def convert_file_to_json(file_path):
             :return: (key string, value string)
             """
             m = re.search('^(\w*): (.*)', line)
-            return m.group(1).lower(), m.group(2)
+            # Watch! Stripping trailing whitespace because for some reason
+            # certain field values are showing whitespace.
+            return m.group(1).lower(), m.group(2).strip()
 
         t = [ parse_metadata(line) for line in metadata.split('\n') ]
 
         response = dict(t)
         response['tags'] = response['tags'].split(', ')
         # Handle scenario when there are no tags which will return an empty
-        # string.
-        response['tags'] = [ tag for tag in response['tags'] if tag ]
+        # string. Also strip the unnecessary whitespaces.
+        response['tags'] = [ tag.strip() for tag in response['tags'] if tag ]
         response['body'] = body
         return response
 
@@ -379,11 +381,11 @@ if "__main__" == __name__:
                 src_json['created'] = iso_to_datetime(src_json['created'])
                 src_json['log_filename'] = log_filename
 
-                if src_json['version'] == '0.2.0':
-                    src_json['occurred'] = iso_to_datetime(src_json['occurred'])
-                else:
+                if src_json['version'] == '0.1.0':
                     # Temporary
                     src_json['occurred'] = src_json['created']
+                else:
+                    src_json['occurred'] = iso_to_datetime(src_json['occurred'])
 
                 return src_json
 
