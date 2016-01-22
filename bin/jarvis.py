@@ -398,8 +398,12 @@ if "__main__" == __name__:
                         json_log['occurred'].isoformat(),
                         json_log['created'].isoformat(),
                         int(delta/3600))
-                # Clip the body
-                clip = json_log['body'].split('\n')[0][0:250]
+
+                if 'setting' in json_log:
+                    clip = json_log['setting']
+                else:
+                    # Clip the body
+                    clip = json_log['body'].split('\n')[0][0:250]
                 return "\n".join([json_log['log_filename'], dates,
                     ", ".join(json_log['tags']), clip])
 
