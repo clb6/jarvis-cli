@@ -216,7 +216,7 @@ if "__main__" == __name__:
         if not os.path.isfile(context.file_path):
             raise IOError("File does not exist! {0}".format(context.file_path))
 
-        images_pattern = '!\[(\w*)\]\(([\w.\/]*)\)'
+        images_pattern = '!\[([\-\w]*)\]\(([\w.\-\/]*)\)'
         # The "\1" and "\2" gets replaced with the regex groups.
         images_link = "<img src=\"file://{0}/\\2\" alt=\"\\1\" height=\"750px\" width=\"750px\" />" \
             .format(js.images_directory)
