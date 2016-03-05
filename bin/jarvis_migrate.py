@@ -57,33 +57,42 @@ def _convert_file_to_json(file_path):
         return response
 
 
-def migrate_tags():
-    print("Migrate tags")
-    dir_tags_to_migrate = os.path.join(os.environ['JARVIS_DIR_ROOT'], "Tags")
+def migrate_resources(resource_type):
+    print("Migrate {0}".format(resource_type.lower()))
+    dir_resources_to_migrate = os.path.join(os.environ['JARVIS_DIR_ROOT'],
+            resource_type)
     num_migrated = 0
     num_total = 0
 
-    for tag_file in os.listdir(dir_tags_to_migrate):
-        tag_path = os.path.join(dir_tags_to_migrate, tag_file)
-        tag_to_migrate = _convert_file_to_json(tag_path)
-        tag_name = tag_file.replace(".md", "")
+    for resource_file in os.listdir(dir_resources_to_migrate):
+        resource_path = os.path.join(dir_resources_to_migrate, resource_file)
+        resource_to_migrate = _convert_file_to_json(resource_path)
+        resource_name = resource_file.replace(".md", "")
 
-        r = requests.put("http://localhost:3000/tags/_migrate/{0}".format(tag_name),
-                json=tag_to_migrate)
+        r = requests.put("http://localhost:3000/{0}/_migrate/{1}" \
+                .format(resource_type.lower(), resource_name), json=resource_to_migrate)
 
         if r.status_code == 200:
-            print("OK: {0}".format(tag_name))
+            print("OK: {0}".format(resource_name))
             num_migrated += 1
         elif r.status_code == 409:
-            print("Conflict: {0}".format(tag_name))
+            print("Conflict: {0}".format(resource_name))
         else:
-            print("Error: {0}, {1}".format(tag_name, r.json()))
-            print(tag_to_migrate)
+            print("Error: {0}, {1}".format(resource_name, r.json()))
+            print(json.dumps(resource_to_migrate))
 
         num_total += 1
 
     print("Done: {0}migrated/{1}total".format(num_migrated, num_total))
 
 
+def migrate_log_entries():
+    migrate_resources("LogEntries")
+
+def migrate_tags():
+    migrate_resources("Tags")
+
+
 if "__main__" == __name__:
     migrate_tags()
+    migrate_log_entries()
