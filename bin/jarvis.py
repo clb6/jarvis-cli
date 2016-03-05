@@ -5,6 +5,7 @@ from collections import namedtuple
 from operator import itemgetter
 import webbrowser
 from datetime import datetime
+import requests
 
 class JarvisSettings(object):
 
@@ -237,6 +238,43 @@ if "__main__" == __name__:
         # tool.
         webbrowser.open("file://{0}".format(temp))
 
+    def show_file(metadata_keys, json_object, resource_id):
+        if not json_object:
+            return
+
+        temp = "/tmp/{0}.md".format(resource_id)
+
+        def convert_json_to_file(metadata_keys, json_object):
+            def stringify(metadata_key):
+                if metadata_key == "tags":
+                    return ", ".join(json_object.get(metadata_key))
+                else:
+                    return json_object.get(metadata_key)
+
+            metadata = [ "{0}: {1}".format(k.capitalize(), stringify(k))
+                    for k in metadata_keys ]
+            metadata = "\n".join(metadata)
+
+            return "\n\n".join([ metadata, json_object.get("body") ])
+
+        with open(temp, 'w') as f:
+            f.write(convert_json_to_file(metadata_keys, json_object))
+
+        # Previews the markdown. This will require you to change the
+        # mimeapps.list setting file in order to chose your markdown preview
+        # tool.
+        webbrowser.open("file://{0}".format(temp))
+
+    def get_jarvis_resource(endpoint, resource_id):
+        r = requests.get("http://localhost:3000/{0}/{1}".format(endpoint, resource_id))
+
+        if r.status_code == 200:
+            return r.json()
+        elif r.status_code == 404:
+            print("Not found: {0}".format(resource_id))
+        else:
+            print("Unknown error: {0}, {1}".format(r.status_code, r.json()))
+
     def create_file(context, element_type):
         open_file_in_editor(context.file_path)
         show_file_with_images(context)
@@ -330,33 +368,45 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
+        def show_log(log_id):
+            metadata_keys_logs = ["id", "author", "created", "occurred", "version",
+                    "tags", "parent", "todo", "setting"]
+
+            show_file(metadata_keys_logs,
+                    get_jarvis_resource('logentries', log_id),
+                    log_id)
+
         if args.show_type == 'tag':
-            show_file_with_images(create_context(js.tags_directory,
-                args.tag_name))
+            metadata_keys_tags = ["name", "author", "created", "version", "tags"]
+
+            show_file(metadata_keys_tags,
+                    get_jarvis_resource('tags', args.tag_name),
+                    args.tag_name)
         elif args.show_type == 'lastlog':
             is_found = False
 
+            # TODO: Replace this with a web call
             for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
                 context = create_context(js.logs_directory, log_file)
+                log_id = log_file.replace(".md", "")
 
                 if args.tag:
                     json_rep = convert_file_to_json(log_path)
 
                     if any([args.tag.lower() in tag.lower()
                         for tag in json_rep['tags']]):
-                        show_file_with_images(context)
+                        show_log(log_id)
                         is_found = True
                         break
                 else:
-                    show_file_with_images(context)
+                    show_log(log_id)
                     is_found = True
                     break
 
             if not is_found:
                 print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
-            show_file_with_images(create_context(js.logs_directory,
-                args.log_entry_name))
+            show_log(args.log_entry_name)
         else:
             raise NotImplementedError("Unknown show type: {0}"
                     .format(args.show_type))
