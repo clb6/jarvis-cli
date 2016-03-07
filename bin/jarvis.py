@@ -14,8 +14,6 @@ class JarvisSettings(object):
         # TODO: Make a test mode where it writes to a test directory.
         self._env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
         self._env_author = os.environ['JARVIS_AUTHOR']
-        self._version_log = "0.4.0"
-        self._version_tag = "0.1.0"
 
     @property
     def root_directory(self):
@@ -39,14 +37,6 @@ class JarvisSettings(object):
     @property
     def author(self):
         return self._env_author
-
-    @property
-    def log_version(self):
-        return self._version_log
-
-    @property
-    def tag_version(self):
-        return self._version_tag
 
 
 def convert_file_to_json(file_path):
