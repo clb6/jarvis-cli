@@ -59,6 +59,7 @@ def _convert_file_to_json(file_path):
 
 def migrate_resources(resource_type):
     print("Migrate {0}".format(resource_type.lower()))
+    # TODO: Add version to the file directory.
     dir_resources_to_migrate = os.path.join(os.environ['JARVIS_DIR_ROOT'],
             resource_type)
     num_migrated = 0
@@ -69,7 +70,7 @@ def migrate_resources(resource_type):
         resource_to_migrate = _convert_file_to_json(resource_path)
         resource_name = resource_file.replace(".md", "")
 
-        r = requests.put("http://localhost:3000/{0}/_migrate/{1}" \
+        r = requests.put("http://localhost:3000/{0}/{1}/migrate" \
                 .format(resource_type.lower(), resource_name), json=resource_to_migrate)
 
         if r.status_code == 200:
