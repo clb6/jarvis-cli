@@ -275,6 +275,10 @@ if "__main__" == __name__:
         else:
             print("Unknown error: {0}, {1}".format(r.status_code, r.json()))
 
+    get_log_entry = partial(get_jarvis_resource, 'logentries')
+
+    get_tag = partial(get_jarvis_resource, 'tags')
+
     def post_jarvis_resource(endpoint, resource_request):
         r = requests.post("http://localhost:3000/{0}".format(endpoint),
                 json=resource_request)
@@ -322,9 +326,10 @@ if "__main__" == __name__:
 
             open_file_in_editor(log_path)
             log = post_jarvis_resource('logentries', convert_file_to_json(log_path))
-            show_file_log(log, log["id"])
 
-            print("Created: {0}, {1}".format(args.element_type, log_path))
+            if log:
+                show_file_log(log, log["id"])
+                print("Created: {0}, {1}".format(args.element_type, log["id"]))
         elif args.element_type == 'tag':
             metadata = [ "Name: {0}".format(args.tag_name),
                     "Author: {0}".format(js.author),
@@ -340,9 +345,10 @@ if "__main__" == __name__:
 
             open_file_in_editor(tag_path)
             tag = post_jarvis_resource('tags', convert_file_to_json(tag_path))
-            show_file_tag(tag, args.tag_name)
 
-            print("Created: {0}, {1}".format(args.element_type, tag_path))
+            if tag:
+                show_file_tag(tag, args.tag_name)
+                print("Created: {0}, {1}".format(args.element_type, args.tag_name))
         else:
             raise NotImplementedError("Unknown information type: {0}"
                     .format(args.element_type))
@@ -365,18 +371,17 @@ if "__main__" == __name__:
     elif args.action_name == 'show':
 
         def get_and_show_log(log_id):
-            log_entry = get_jarvis_resource('logentries', log_id)
+            log_entry = get_log_entry(log_id)
             show_file_log(log_entry, log_id)
 
         if args.show_type == 'tag':
-            tag = get_jarvis_resource('tags', args.tag_name)
+            tag = get_tag(args.tag_name)
             show_file_tag(tag, args.tag_name)
         elif args.show_type == 'lastlog':
             is_found = False
 
             # TODO: Replace this with a web call
             for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
-                context = create_context(js.logs_directory, log_file)
                 log_id = log_file.replace(".md", "")
 
                 if args.tag:
