@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, subprocess, argparse, re
+import os, subprocess, argparse, re, json
 from collections import namedtuple
 from operator import itemgetter
 from functools import partial
@@ -199,37 +199,11 @@ if "__main__" == __name__:
         editor = os.environ['EDITOR']
         subprocess.call([editor, filepath])
 
-    def edit_file(context):
-        if not os.path.isfile(context.file_path):
-            raise IOError("File does not exist! {0}".format(context.file_path))
-        open_file_in_editor(context.file_path)
+    metadata_keys_tag = ["name", "author", "created", "version", "tags"]
+    metadata_keys_log = ["id", "author", "created", "occurred", "version", "tags",
+            "parent", "todo", "setting"]
 
-    def show_file_with_images(context):
-        if not os.path.isfile(context.file_path):
-            raise IOError("File does not exist! {0}".format(context.file_path))
-
-        images_pattern = '!\[([\-\w]*)\]\(([\w.\-\/]*)\)'
-        # The "\1" and "\2" gets replaced with the regex groups.
-        images_link = "<img src=\"file://{0}/\\2\" alt=\"\\1\" height=\"750px\" width=\"750px\" />" \
-            .format(js.images_directory)
-
-        # Look for markdown images and transform to html images with the
-        # appropriate directory.  Plus I can resize the image here.
-
-        with open(context.file_path, 'r') as f:
-            old_text = f.read()
-
-        temp = "/tmp/{0}.md".format(context.file_name)
-
-        with open(temp, 'w') as f:
-            f.write(re.sub(images_pattern, images_link, old_text))
-
-        # Previews the markdown. This will require you to change the
-        # mimeapps.list setting file in order to chose your markdown preview
-        # tool.
-        webbrowser.open("file://{0}".format(temp))
-
-    def show_file(metadata_keys, json_object, resource_id):
+    def handle_jarvis_resource(metadata_keys, json_object, resource_id):
         if not json_object:
             return
 
@@ -251,17 +225,29 @@ if "__main__" == __name__:
         with open(temp, 'w') as f:
             f.write(convert_json_to_file(metadata_keys, json_object))
 
-        # Previews the markdown. This will require you to change the
-        # mimeapps.list setting file in order to chose your markdown preview
-        # tool.
-        webbrowser.open("file://{0}".format(temp))
+        return temp
 
-    show_file_tag = partial(show_file,
-            ["name", "author", "created", "version", "tags"])
+    def edit_file(metadata_keys, json_object, resource_id):
+        temp = handle_jarvis_resource(metadata_keys, json_object, resource_id)
 
-    show_file_log = partial(show_file,
-            ["id", "author", "created", "occurred", "version", "tags", "parent",
-                "todo", "setting"])
+        if temp:
+            open_file_in_editor(temp)
+            return temp
+
+    edit_file_tag = partial(edit_file, metadata_keys_tag)
+    edit_file_log = partial(edit_file, metadata_keys_log)
+
+    def show_file(metadata_keys, json_object, resource_id):
+        temp = handle_jarvis_resource(metadata_keys, json_object, resource_id)
+
+        if temp:
+            # Previews the markdown. This will require you to change the
+            # mimeapps.list setting file in order to chose your markdown preview
+            # tool.
+            webbrowser.open("file://{0}".format(temp))
+
+    show_file_tag = partial(show_file, metadata_keys_tag)
+    show_file_log = partial(show_file, metadata_keys_log)
 
     # TODO: Web API calls need to throw exceptions
 
@@ -276,8 +262,19 @@ if "__main__" == __name__:
             print("Unknown error: {0}, {1}".format(r.status_code, r.json()))
 
     get_log_entry = partial(get_jarvis_resource, 'logentries')
-
     get_tag = partial(get_jarvis_resource, 'tags')
+
+    def put_jarvis_resource(endpoint, resource_id, resource_updated):
+        r = requests.put("http://localhost:3000/{0}/{1}".format(endpoint, resource_id),
+                json=resource_updated)
+
+        if r.status_code == 200:
+            return r.json()
+        elif r.status_code == 400:
+            print("Invalid request: {0}".format(r.json()))
+            print("{0}".format(json.dumps(resource_updated)))
+        elif r.status_code == 404:
+            print("Not found: {0}".format(endpoint))
 
     def post_jarvis_resource(endpoint, resource_request):
         r = requests.post("http://localhost:3000/{0}".format(endpoint),
@@ -356,17 +353,37 @@ if "__main__" == __name__:
     elif args.action_name == 'edit':
 
         if args.element_type == 'log':
-            context = create_context(js.logs_directory, args.log_entry_name)
-        elif args.element_type == 'tag':
-            context = create_context(js.tags_directory, args.tag_name)
-        else:
-            raise NotImplementedError("Unknown information type: {0}"
-                    .format(args.element_type))
+            log_entry = get_log_entry(args.log_entry_name)
 
-        edit_file(context)
-        show_file_with_images(context)
-        print("Editted: {0}, {1}".format(args.element_type, context.file_path))
-        #check_and_create_missing_tags(context.file_path)
+            if log_entry:
+                filepath = edit_file_log(log_entry, log_entry["id"])
+
+                if filepath:
+                    json_object = convert_file_to_json(filepath)
+                    # WATCH! This specialty code here because the LogEntry.id
+                    # is a number.
+                    json_object["id"] = int(json_object["id"])
+                    log_entry = put_jarvis_resource("logentries",
+                            args.log_entry_name, json_object)
+
+                    if log_entry:
+                        show_file_log(log_entry, args.log_entry_name)
+                        print("Editted: {0}, {1}".format(args.element_type,
+                            args.log_entry_name))
+        elif args.element_type == 'tag':
+            tag = get_tag(args.tag_name)
+
+            if tag:
+                filepath = edit_file_tag(tag, tag["name"])
+
+                if filepath:
+                    json_object = convert_file_to_json(filepath)
+                    tag = put_jarvis_resource("tags", args.tag_name, json_object)
+
+                    if tag:
+                        show_file_tag(tag, args.tag_name)
+                        print("Editted: {0}, {1}".format(args.element_type,
+                            args.tag_name))
 
     elif args.action_name == 'show':
 
