@@ -274,67 +274,77 @@ if "__main__" == __name__:
             print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
             print(json.dumps(resource_request))
 
-    # TODO: Need to revisit this.
-    def check_and_create_missing_tags(filepath):
-        json_rep = convert_file_to_json(filepath)
-        new_tags = set(json_rep['tags'])
-        existing_tags = set(get_tags(js))
+    def create_file(post_func, show_file_func, resource_id_key, local_path,
+            stub_content):
 
-        # TODO: Need to handle case when not all the tags gets created. At least
-        # print the name of the tags that didn't get created.
-        for tag_name in new_tags.difference(existing_tags):
-            create_tag(tag_name)
+        def check_and_create_missing_tags(resource_request):
+            for tag_name in resource_request['tags']:
+                if not get_tag(tag_name.lower()):
+                    try:
+                        create_file_tag(tag_name)
+                    except Exception as e:
+                        # TODO: Need to handle case when not all the tags gets created.
+                        print("Unexpected error creating tag: {0}, {1}".format(
+                            tag_name, e))
+
+        with open(local_path, 'w') as f:
+            f.write(stub_content)
+
+        open_file_in_editor(local_path)
+        resource_request = convert_file_to_json(local_path)
+        check_and_create_missing_tags(resource_request)
+        resource = post_func(resource_request)
+
+        if resource:
+            resource_id = resource[resource_id_key]
+            show_file_func(resource, resource_id)
+            print("Created: {0}".format(resource_id))
+
+    def create_file_log():
+        created = datetime.utcnow().replace(microsecond=0)
+
+        metadata = [ ("Author", js.author), ("Occurred", created.isoformat()),
+                ("Tags", None), ("Parent", None), ("Todo", None), ("Setting", None) ]
+        metadata = [ "{0}: {1}".format(k, v if v else "")
+                for k, v in metadata ]
+        stub_content = "\n".join(metadata)
+
+        # datetime.fromtimestamp(0) is not Unix epoch and returns
+        # 1969-12-31 19:00 instead.
+        epoch = datetime(1970, 1, 1)
+        # Need a temporary log id because the log id actually gets created by
+        # the API.
+        log_id_temp = "jarvis_log_{0}" \
+            .format(str(int((created - epoch).total_seconds())))
+
+        log_path = create_filepath("/tmp", log_id_temp)
+
+        create_file(partial(post_jarvis_resource, 'logentries'), show_file_log,
+                "id", log_path, stub_content)
+
+    def create_file_tag(tag_name):
+        metadata = [ "Name: {0}".format(tag_name),
+                "Author: {0}".format(js.author),
+                "Tags: " ]
+
+        stub_content = "\n\n".join(["\n".join(metadata), "# {0}\n".format(tag_name)])
+        tag_path = create_filepath("/tmp", tag_name)
+
+        create_file(partial(post_jarvis_resource, 'tags'), show_file_tag,
+                "name", tag_path, stub_content)
 
 
     if args.action_name == 'new':
 
         if args.element_type == 'log':
-            created = datetime.utcnow().replace(microsecond=0)
-
-            metadata = [ ("Author", js.author), ("Occurred", created.isoformat()),
-                    ("Tags", None), ("Parent", None), ("Todo", None), ("Setting", None) ]
-            metadata = [ "{0}: {1}".format(k, v if v else "")
-                    for k, v in metadata ]
-            metadata = "\n".join(metadata)
-
-            # datetime.fromtimestamp(0) is not Unix epoch and returns
-            # 1969-12-31 19:00 instead.
-            epoch = datetime(1970, 1, 1)
-            # Need a temporary log id because the log id actually gets created by
-            # the API.
-            log_id_temp = "jarvis_log_{0}" \
-                .format(str(int((created - epoch).total_seconds())))
-
-            log_path = create_filepath("/tmp", log_id_temp)
-
-            with open(log_path, 'w') as f:
-                f.write(metadata)
-
-            open_file_in_editor(log_path)
-            log = post_jarvis_resource('logentries', convert_file_to_json(log_path))
-
-            if log:
-                show_file_log(log, log["id"])
-                print("Created: {0}, {1}".format(args.element_type, log["id"]))
+            create_file_log()
         elif args.element_type == 'tag':
-            metadata = [ "Name: {0}".format(args.tag_name),
-                    "Author: {0}".format(js.author),
-                    "Tags: " ]
+            print("Checking if tag already exists")
 
-            # TODO: Check if the tag already exists
-
-            tag_path = create_filepath("/tmp", args.tag_name)
-            stub = "\n\n".join(["\n".join(metadata), "# {0}\n".format(args.tag_name)])
-
-            with open(tag_path, 'w') as f:
-                f.write(stub)
-
-            open_file_in_editor(tag_path)
-            tag = post_jarvis_resource('tags', convert_file_to_json(tag_path))
-
-            if tag:
-                show_file_tag(tag, args.tag_name)
-                print("Created: {0}, {1}".format(args.element_type, args.tag_name))
+            if get_tag(args.tag_name.lower()):
+                print("Tag already exists: {0}".format(args.tag_name))
+            else:
+                create_file_tag(args.tag_name)
         else:
             raise NotImplementedError("Unknown information type: {0}"
                     .format(args.element_type))
