@@ -117,6 +117,44 @@ def get_tags_with_relations(jarvis_settings):
             sorted(os.listdir(jarvis_settings.tags_directory)) ]
 
 
+# TODO: Web API calls need to throw exceptions
+
+def get_jarvis_resource(endpoint, resource_id):
+    r = requests.get("http://localhost:3000/{0}/{1}".format(endpoint, resource_id))
+
+    if r.status_code == 200:
+        return r.json()
+    elif r.status_code == 404:
+        print("Jarvis-api not found: {0}".format(resource_id))
+    else:
+        print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
+
+get_log_entry = partial(get_jarvis_resource, 'logentries')
+get_tag = partial(get_jarvis_resource, 'tags')
+
+def put_jarvis_resource(endpoint, resource_id, resource_updated):
+    r = requests.put("http://localhost:3000/{0}/{1}".format(endpoint, resource_id),
+            json=resource_updated)
+
+    if r.status_code == 200:
+        return r.json()
+    elif r.status_code == 400:
+        print("Jarvis-api bad request: {0}".format(r.json()))
+        print(json.dumps(resource_updated))
+    elif r.status_code == 404:
+        print("Jarvis-api not found: {0}".format(resource_id))
+
+def post_jarvis_resource(endpoint, resource_request):
+    r = requests.post("http://localhost:3000/{0}".format(endpoint),
+            json=resource_request)
+
+    if r.status_code == 200:
+        return r.json()
+    else:
+        print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
+        print(json.dumps(resource_request))
+
+
 if "__main__" == __name__:
     parser = argparse.ArgumentParser(description='Jarvis is used for personal information management')
 
@@ -236,43 +274,6 @@ if "__main__" == __name__:
 
     show_file_tag = partial(show_file, metadata_keys_tag)
     show_file_log = partial(show_file, metadata_keys_log)
-
-    # TODO: Web API calls need to throw exceptions
-
-    def get_jarvis_resource(endpoint, resource_id):
-        r = requests.get("http://localhost:3000/{0}/{1}".format(endpoint, resource_id))
-
-        if r.status_code == 200:
-            return r.json()
-        elif r.status_code == 404:
-            print("Jarvis-api not found: {0}".format(resource_id))
-        else:
-            print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
-
-    get_log_entry = partial(get_jarvis_resource, 'logentries')
-    get_tag = partial(get_jarvis_resource, 'tags')
-
-    def put_jarvis_resource(endpoint, resource_id, resource_updated):
-        r = requests.put("http://localhost:3000/{0}/{1}".format(endpoint, resource_id),
-                json=resource_updated)
-
-        if r.status_code == 200:
-            return r.json()
-        elif r.status_code == 400:
-            print("Jarvis-api bad request: {0}".format(r.json()))
-            print(json.dumps(resource_updated))
-        elif r.status_code == 404:
-            print("Jarvis-api not found: {0}".format(resource_id))
-
-    def post_jarvis_resource(endpoint, resource_request):
-        r = requests.post("http://localhost:3000/{0}".format(endpoint),
-                json=resource_request)
-
-        if r.status_code == 200:
-            return r.json()
-        else:
-            print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
-            print(json.dumps(resource_request))
 
     def create_file(post_func, show_file_func, resource_id_key, local_path,
             stub_content):
