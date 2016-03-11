@@ -275,19 +275,19 @@ if "__main__" == __name__:
     show_file_tag = partial(show_file, metadata_keys_tag)
     show_file_log = partial(show_file, metadata_keys_log)
 
+    def check_and_create_missing_tags(resource_request):
+        for tag_name in resource_request['tags']:
+            print("Checking if tag already exists: {0}".format(tag_name))
+            if not get_tag(tag_name.lower()):
+                try:
+                    create_file_tag(tag_name)
+                except Exception as e:
+                    # TODO: Need to handle case when not all the tags gets created.
+                    print("Unexpected error creating tag: {0}, {1}".format(
+                        tag_name, e))
+
     def create_file(post_func, show_file_func, resource_id_key, local_path,
             stub_content):
-
-        def check_and_create_missing_tags(resource_request):
-            for tag_name in resource_request['tags']:
-                if not get_tag(tag_name.lower()):
-                    try:
-                        create_file_tag(tag_name)
-                    except Exception as e:
-                        # TODO: Need to handle case when not all the tags gets created.
-                        print("Unexpected error creating tag: {0}, {1}".format(
-                            tag_name, e))
-
         with open(local_path, 'w') as f:
             f.write(stub_content)
 
@@ -340,7 +340,7 @@ if "__main__" == __name__:
         if args.element_type == 'log':
             create_file_log()
         elif args.element_type == 'tag':
-            print("Checking if tag already exists")
+            print("Checking if tag already exists: {0}".format(args.tag_name))
 
             if get_tag(args.tag_name.lower()):
                 print("Tag already exists: {0}".format(args.tag_name))
@@ -351,6 +351,8 @@ if "__main__" == __name__:
                     .format(args.element_type))
 
     elif args.action_name == 'edit':
+
+        # TODO: DRY this code?
 
         if args.element_type == 'log':
             log_entry = get_log_entry(args.log_entry_name)
@@ -363,6 +365,7 @@ if "__main__" == __name__:
                     # WATCH! This specialty code here because the LogEntry.id
                     # is a number.
                     json_object["id"] = int(json_object["id"])
+                    check_and_create_missing_tags(json_object)
                     log_entry = put_jarvis_resource("logentries",
                             args.log_entry_name, json_object)
 
@@ -378,6 +381,7 @@ if "__main__" == __name__:
 
                 if filepath:
                     json_object = convert_file_to_json(filepath)
+                    check_and_create_missing_tags(json_object)
                     tag = put_jarvis_resource("tags", args.tag_name, json_object)
 
                     if tag:
