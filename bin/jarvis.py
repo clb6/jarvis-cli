@@ -199,7 +199,10 @@ if "__main__" == __name__:
                 if metadata_key == "tags":
                     return ", ".join(json_object.get(metadata_key))
                 else:
-                    return json_object.get(metadata_key)
+                    # Don't want to display literally "None" so check for None
+                    # and convert to empty string.
+                    v = json_object.get(metadata_key)
+                    return v if v else ""
 
             metadata = [ "{0}: {1}".format(k.capitalize(), stringify(k))
                     for k in metadata_keys ]
