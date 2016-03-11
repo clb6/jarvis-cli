@@ -23,10 +23,6 @@ class JarvisSettings(object):
         return "{0}/{1}".format(self.root_directory, sub_directory)
 
     @property
-    def images_directory(self):
-        return self._create_directory('Images')
-
-    @property
     def logs_directory(self):
         return self._create_directory('LogEntries')
 
@@ -95,19 +91,8 @@ def create_filepath(file_dir, file_name):
     file_name = file_name if ".md" in file_name else "{0}.md".format(file_name)
     return os.path.join(file_dir, file_name)
 
-JarvisContext = namedtuple('JarvisContext', ['file_name', 'file_path'])
-
-def create_context(file_dir, file_name):
-    return JarvisContext(file_name, create_filepath(file_dir, file_name))
-
 class JarvisTagError(RuntimeError):
     pass
-
-def get_tags(jarvis_settings):
-    """
-    :return: iterable of just tag names
-    """
-    return map(lambda e: e[0], get_tags_with_relations(jarvis_settings))
 
 def get_tags_with_relations(jarvis_settings):
     """
@@ -257,9 +242,9 @@ if "__main__" == __name__:
         if r.status_code == 200:
             return r.json()
         elif r.status_code == 404:
-            print("Not found: {0}".format(resource_id))
+            print("Jarvis-api not found: {0}".format(resource_id))
         else:
-            print("Unknown error: {0}, {1}".format(r.status_code, r.json()))
+            print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
 
     get_log_entry = partial(get_jarvis_resource, 'logentries')
     get_tag = partial(get_jarvis_resource, 'tags')
@@ -271,10 +256,10 @@ if "__main__" == __name__:
         if r.status_code == 200:
             return r.json()
         elif r.status_code == 400:
-            print("Invalid request: {0}".format(r.json()))
-            print("{0}".format(json.dumps(resource_updated)))
+            print("Jarvis-api bad request: {0}".format(r.json()))
+            print(json.dumps(resource_updated))
         elif r.status_code == 404:
-            print("Not found: {0}".format(endpoint))
+            print("Jarvis-api not found: {0}".format(resource_id))
 
     def post_jarvis_resource(endpoint, resource_request):
         r = requests.post("http://localhost:3000/{0}".format(endpoint),
@@ -283,7 +268,8 @@ if "__main__" == __name__:
         if r.status_code == 200:
             return r.json()
         else:
-            print("WTF: {0}".format(r.status_code))
+            print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
+            print(json.dumps(resource_request))
 
     # TODO: Need to revisit this.
     def check_and_create_missing_tags(filepath):
