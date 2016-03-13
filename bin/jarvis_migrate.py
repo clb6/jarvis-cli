@@ -57,11 +57,11 @@ def _convert_file_to_json(file_path):
         return response
 
 
-def migrate_resources(resource_type):
-    print("Migrate {0}".format(resource_type.lower()))
-    # TODO: Add version to the file directory.
+def migrate_resources(resource_type, version):
     dir_resources_to_migrate = os.path.join(os.environ['JARVIS_DIR_ROOT'],
-            resource_type)
+            "{0}_v{1}".format(resource_type, version))
+    print("Migrate {0}: {1}".format(resource_type.lower(),
+        dir_resources_to_migrate))
     num_migrated = 0
     num_total = 0
 
@@ -87,13 +87,14 @@ def migrate_resources(resource_type):
     print("Done: {0}migrated/{1}total".format(num_migrated, num_total))
 
 
-def migrate_log_entries():
-    migrate_resources("LogEntries")
+def migrate_log_entries(version):
+    migrate_resources("LogEntries", version)
 
-def migrate_tags():
-    migrate_resources("Tags")
+def migrate_tags(version):
+    migrate_resources("Tags", version)
 
 
 if "__main__" == __name__:
-    migrate_tags()
-    migrate_log_entries()
+    version = 1
+    migrate_tags(version)
+    migrate_log_entries(version)
