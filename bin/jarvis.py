@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#! python
 
 import os, subprocess, argparse, re, json
 from collections import namedtuple
