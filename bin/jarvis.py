@@ -6,6 +6,7 @@ from operator import itemgetter
 from functools import partial
 import webbrowser
 from datetime import datetime
+import urllib
 import requests
 
 class JarvisSettings(object):
@@ -116,11 +117,12 @@ def get_tags_with_relations(jarvis_settings):
     return [ parse_tag(tag_file_name) for tag_file_name in
             sorted(os.listdir(jarvis_settings.tags_directory)) ]
 
-
 # TODO: Web API calls need to throw exceptions
+JARVIS_API_URI = "localhost:3000"
 
 def get_jarvis_resource(endpoint, resource_id):
-    r = requests.get("http://localhost:3000/{0}/{1}".format(endpoint, resource_id))
+    r = requests.get("http://{0}/{1}/{2}".format(JARVIS_API_URI, endpoint,
+        urllib.parse.quote(resource_id)))
 
     if r.status_code == 200:
         return r.json()
@@ -133,7 +135,8 @@ get_log_entry = partial(get_jarvis_resource, 'logentries')
 get_tag = partial(get_jarvis_resource, 'tags')
 
 def put_jarvis_resource(endpoint, resource_id, resource_updated):
-    r = requests.put("http://localhost:3000/{0}/{1}".format(endpoint, resource_id),
+    r = requests.put("http://{0}/{1}/{2}".format(JARVIS_API_URI, endpoint,
+        urllib.parse.quote(resource_id)),
             json=resource_updated)
 
     if r.status_code == 200:
@@ -145,7 +148,7 @@ def put_jarvis_resource(endpoint, resource_id, resource_updated):
         print("Jarvis-api not found: {0}".format(resource_id))
 
 def post_jarvis_resource(endpoint, resource_request):
-    r = requests.post("http://localhost:3000/{0}".format(endpoint),
+    r = requests.post("http://{0}/{1}".format(JARVIS_API_URI, endpoint),
             json=resource_request)
 
     if r.status_code == 200:
