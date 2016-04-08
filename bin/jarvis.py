@@ -458,75 +458,46 @@ if "__main__" == __name__:
                 tags = [ [tag['name'], ",".join(tag['tags'])] for tag in tags ]
                 print(tabulate(tags, ["tag name", "tags"], tablefmt="simple"))
         elif args.listing_type == 'logs':
-            entries = []
+            logs = query("logentries", [("tags", args.tag),
+                ("searchterm", args.search_term)])
 
-            # 1. Go through each log file
-            # 2. Convert each file to json
-            # 3. Filter by tag if need be
-            # 4. Print entries
+            if logs:
+                def create_summary(log):
+                    """
+                    Form a summary representation of the log file.
+                    """
+                    def iso_to_datetime(str_datetime):
+                        return datetime.strptime(str_datetime, '%Y-%m-%dT%H:%M:%S')
 
-            def iso_to_datetime(str_datetime):
-                return datetime.strptime(str_datetime, '%Y-%m-%dT%H:%M:%S')
+                    created = iso_to_datetime(log['created'])
+                    occurred = iso_to_datetime(log['occurred'])
 
-            def convert_to_json_log(src_json, log_filename):
-                src_json['created'] = iso_to_datetime(src_json['created'])
-                src_json['log_filename'] = log_filename
+                    delta = (created - occurred).total_seconds()
+                    dates = "Occurred: {0}, Created: {1}, Delta: {2}hrs" \
+                        .format(log['occurred'], log['created'], int(delta/3600))
 
-                if src_json['version'] == '0.1.0':
-                    # Temporary
-                    src_json['occurred'] = src_json['created']
-                else:
-                    src_json['occurred'] = iso_to_datetime(src_json['occurred'])
+                    if log['setting'] == "N/A":
+                        # Clip the body
+                        clip = log['body'].split('\n')[0][0:250]
+                    else:
+                        clip = log['setting']
+                    return "\n".join([str(log['id']), dates,
+                        ", ".join(log['tags']), clip])
 
-                return src_json
+                def parse(log):
+                    if args.search_term:
+                        # This regex will look for a search term and grab 60 characters
+                        # around the matched term.
+                        search_regex = re.compile('.{{0,30}}\S*{0}\S*.{{0,30}}'
+                                .format(args.search_term), re.IGNORECASE)
 
-            def create_summary(json_log):
-                """
-                Form a summary representation of the log file.
-                """
-                delta = (json_log['created'] - json_log['occurred']).total_seconds()
-                dates = "Occurred: {0}, Created: {1}, Delta: {2}hrs".format(
-                        json_log['occurred'].isoformat(),
-                        json_log['created'].isoformat(),
-                        int(delta/3600))
+                        def find_search_term(log):
+                            """
+                            :return: List of the matched strings
+                            """
+                            return [ m.group(0) for m in
+                                    search_regex.finditer(log['body']) ]
 
-                if 'setting' in json_log:
-                    clip = json_log['setting']
-                else:
-                    # Clip the body
-                    clip = json_log['body'].split('\n')[0][0:250]
-                return "\n".join([json_log['log_filename'], dates,
-                    ", ".join(json_log['tags']), clip])
-
-            json_logs = [ convert_to_json_log(convert_file_to_json(
-                "{0}/{1}".format(js.logs_directory, log_filename)), log_filename)
-                for log_filename in os.listdir(js.logs_directory) ]
-
-            def is_tag_match(target_tag, json_log):
-                """
-                :return: Return True if no target tag to match against or if there
-                is a tag match else False
-                """
-                return not target_tag or any([target_tag.lower() in tag.lower()
-                    for tag in json_log['tags']])
-
-            # This regex will look for a search term and grab 60 characters
-            # around the matched term.
-            search_regex = re.compile('.{{0,30}}\S*{0}\S*.{{0,30}}'.format(args.search_term),
-                    re.IGNORECASE) if args.search_term else None
-
-            def find_search_term(json_log):
-                """
-                :return: List of the matched strings
-                """
-                return [ m.group(0) for m in
-                        search_regex.finditer(json_log['body']) ]
-
-            # Sort order is in increasing time by Occurred datetime. The most
-            # recent should be visible at the new command prompt.
-            for json_log in sorted(json_logs, key=itemgetter('occurred')):
-                if is_tag_match(args.tag, json_log):
-                    if search_regex:
                         def format_matches(matches):
                             if matches:
                                 return "\n".join([ "[{0}]: \"{1}\"".format(i, matches[i])
@@ -534,15 +505,14 @@ if "__main__" == __name__:
                             else:
                                 return "No matches"
 
-                        entry = "\n\nSearch matches:\n".join([ create_summary(json_log),
-                             format_matches(find_search_term(json_log)) ])
-                        entries.append(entry)
+                        return "\n\nSearch matches:\n".join([ create_summary(log),
+                             format_matches(find_search_term(log)) ])
                     else:
-                        entries.append(create_summary(json_log))
+                        return create_summary(log)
 
-            if entries:
-                print("\n\n".join(entries))
-                print("\n\nLog entries found: {0}".format(len(entries)))
+                logs = [ parse(log) for log in reversed(logs) ]
+                print("\n\n".join(logs))
+                print("\n\nLog entries found: {0}".format(len(logs)))
             else:
                 print("No log entries found")
         else:
