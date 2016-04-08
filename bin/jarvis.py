@@ -388,28 +388,6 @@ if "__main__" == __name__:
         if args.show_type == 'tag':
             tag = get_tag(args.tag_name)
             show_file_tag(tag, args.tag_name)
-        elif args.show_type == 'lastlog':
-            is_found = False
-
-            # TODO: Replace this with a web call
-            for log_file in sorted(os.listdir(js.logs_directory), reverse=True):
-                log_id = log_file.replace(".md", "")
-
-                if args.tag:
-                    json_rep = convert_file_to_json(log_path)
-
-                    if any([args.tag.lower() in tag.lower()
-                        for tag in json_rep['tags']]):
-                        get_and_show_log(log_id)
-                        is_found = True
-                        break
-                else:
-                    get_and_show_log(log_id)
-                    is_found = True
-                    break
-
-            if not is_found:
-                print("There is no log entry for \"{0}\"".format(args.tag))
         elif args.show_type == 'log':
             get_and_show_log(args.log_entry_name)
         else:
