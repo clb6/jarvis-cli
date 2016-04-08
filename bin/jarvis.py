@@ -457,6 +457,8 @@ if "__main__" == __name__:
             if tags:
                 tags = [ [tag['name'], ",".join(tag['tags'])] for tag in tags ]
                 print(tabulate(tags, ["tag name", "tags"], tablefmt="simple"))
+            else:
+                print("No tags found")
         elif args.listing_type == 'logs':
             logs = query("logentries", [("tags", args.tag),
                 ("searchterm", args.search_term)])
