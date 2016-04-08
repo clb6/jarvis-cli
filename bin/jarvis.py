@@ -14,32 +14,6 @@ from tabulate import tabulate
 
 UrlTuple = namedtuple('UrlTuple', ['scheme', 'netloc', 'path', 'query', 'fragment'])
 
-class JarvisSettings(object):
-
-    def __init__(self):
-        # TODO: Make a test mode where it writes to a test directory.
-        self._env_dir_jarvis_root = os.environ['JARVIS_DIR_ROOT']
-        self._env_author = os.environ['JARVIS_AUTHOR']
-
-    @property
-    def root_directory(self):
-        return self._env_dir_jarvis_root
-
-    def _create_directory(self, sub_directory):
-        return "{0}/{1}".format(self.root_directory, sub_directory)
-
-    @property
-    def logs_directory(self):
-        return self._create_directory('LogEntries')
-
-    @property
-    def tags_directory(self):
-        return self._create_directory('Tags')
-
-    @property
-    def author(self):
-        return self._env_author
-
 
 def convert_file_to_json(file_path):
     """
@@ -96,9 +70,6 @@ def create_filepath(file_dir, file_name):
     """
     file_name = file_name if ".md" in file_name else "{0}.md".format(file_name)
     return os.path.join(file_dir, file_name)
-
-class JarvisTagError(RuntimeError):
-    pass
 
 # TODO: Web API calls need to throw exceptions
 JARVIS_API_URI = "localhost:3000"
@@ -206,8 +177,6 @@ if "__main__" == __name__:
     # is acceptable to Argparse which sucks for me:
     #   jarvis.py new
 
-    js = JarvisSettings()
-
     def open_file_in_editor(filepath):
         editor = os.environ['EDITOR']
         subprocess.call([editor, filepath])
@@ -291,10 +260,12 @@ if "__main__" == __name__:
             show_file_func(resource, resource_id)
             print("Created: {0}".format(resource_id))
 
+    AUTHOR = os.environ['JARVIS_AUTHOR']
+
     def create_file_log():
         created = datetime.utcnow().replace(microsecond=0)
 
-        metadata = [ ("Author", js.author), ("Occurred", created.isoformat()),
+        metadata = [ ("Author", AUTHOR), ("Occurred", created.isoformat()),
                 ("Tags", None), ("Parent", None), ("Todo", None), ("Setting", None) ]
         metadata = [ "{0}: {1}".format(k, v if v else "")
                 for k, v in metadata ]
@@ -315,7 +286,7 @@ if "__main__" == __name__:
 
     def create_file_tag(tag_name):
         metadata = [ "Name: {0}".format(tag_name),
-                "Author: {0}".format(js.author),
+                "Author: {0}".format(AUTHOR),
                 "Tags: " ]
 
         stub_content = "\n\n".join(["\n".join(metadata), "# {0}\n".format(tag_name)])
