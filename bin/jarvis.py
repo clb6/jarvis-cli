@@ -418,8 +418,8 @@ if "__main__" == __name__:
 
     elif args.action_name == 'list':
 
-        if args.listing_type == 'tags':
-            def query_tags(url):
+        def query(endpoint, query_params):
+            def query_jarvis_resources(url):
                 """
                 Recursively query for all tags
                 """
@@ -433,7 +433,8 @@ if "__main__" == __name__:
                             if link['rel'] == "next"]
                     next_link = links.pop() if links else None
 
-                    more_items = query_tags(next_link) if next_link else []
+                    more_items = query_jarvis_resources(next_link) \
+                        if next_link else []
                     return result['items'] + more_items
                 else:
                     print("Jarvis-api error: {0}".format(r.status_code))
@@ -444,11 +445,14 @@ if "__main__" == __name__:
                         if value else ""
 
             query = "&".join([query_param(field, value)
-                for field, value in [("name", args.tag_name),
-                    ("tags", args.assoc_tags)]])
-            url = urlunsplit(UrlTuple("http", JARVIS_API_URI, "tags", query, ""))
+                for field, value in query_params])
+            url = urlunsplit(UrlTuple("http", JARVIS_API_URI, endpoint, query, ""))
 
-            tags = query_tags(url)
+            return query_jarvis_resources(url)
+
+        if args.listing_type == 'tags':
+            tags = query("tags", [("name", args.tag_name),
+                ("tags", args.assoc_tags)])
 
             if tags:
                 tags = [ [tag['name'], ",".join(tag['tags'])] for tag in tags ]
