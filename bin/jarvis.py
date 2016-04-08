@@ -7,7 +7,12 @@ from functools import partial
 import webbrowser
 from datetime import datetime
 import urllib
+from urllib.parse import urlunsplit
 import requests
+from tabulate import tabulate
+
+
+UrlTuple = namedtuple('UrlTuple', ['scheme', 'netloc', 'path', 'query', 'fragment'])
 
 class JarvisSettings(object):
 
@@ -95,30 +100,9 @@ def create_filepath(file_dir, file_name):
 class JarvisTagError(RuntimeError):
     pass
 
-def get_tags_with_relations(jarvis_settings):
-    """
-    :return: list of (tag name, list of related tags)
-    """
-    tag_pattern = re.compile('([\w&]*)\.md')
-
-    def parse_tag(tag_file_name):
-        """
-        :return: tag name, list of related tags
-        """
-        try:
-            filepath = create_filepath(jarvis_settings.tags_directory,
-                    tag_file_name)
-            json_rep = convert_file_to_json(filepath)
-            return tag_pattern.search(tag_file_name).group(1), \
-                json_rep['tags']
-        except:
-            raise JarvisTagError("Unexpected tag file name: {0}".format(tag_file_name))
-
-    return [ parse_tag(tag_file_name) for tag_file_name in
-            sorted(os.listdir(jarvis_settings.tags_directory)) ]
-
 # TODO: Web API calls need to throw exceptions
 JARVIS_API_URI = "localhost:3000"
+
 
 def get_jarvis_resource(endpoint, resource_id):
     r = requests.get("http://{0}/{1}/{2}".format(JARVIS_API_URI, endpoint,
@@ -204,6 +188,9 @@ if "__main__" == __name__:
             dest='listing_type')
 
     parser_list_tags = subparsers_list.add_parser('tags', help='List all tags')
+    parser_list_tags.add_argument('-n', '--tag-name', nargs='?', help='Search by tag name')
+    parser_list_tags.add_argument('-a', '--assoc-tags', nargs='?',
+        help='Search by associated tags')
 
     parser_list_logs = subparsers_list.add_parser('logs', help='List all logs')
     parser_list_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
@@ -432,8 +419,40 @@ if "__main__" == __name__:
     elif args.action_name == 'list':
 
         if args.listing_type == 'tags':
-            for tag, related_tags in get_tags_with_relations(js):
-                print("{0} -> {1}".format(tag, ', '.join(related_tags)))
+            def query_tags(url):
+                """
+                Recursively query for all tags
+                """
+                r = requests.get(url)
+
+                if r.status_code == 200:
+                    result = r.json()
+
+                    # Try to pull out next link
+                    links = [link['href'] for link in result['links']
+                            if link['rel'] == "next"]
+                    next_link = links.pop() if links else None
+
+                    more_items = query_tags(next_link) if next_link else []
+                    return result['items'] + more_items
+                else:
+                    print("Jarvis-api error: {0}".format(r.status_code))
+                    return []
+
+            def query_param(field, value):
+                return "{0}={1}".format(field, urllib.parse.quote(value)) \
+                        if value else ""
+
+            query = "&".join([query_param(field, value)
+                for field, value in [("name", args.tag_name),
+                    ("tags", args.assoc_tags)]])
+            url = urlunsplit(UrlTuple("http", JARVIS_API_URI, "tags", query, ""))
+
+            tags = query_tags(url)
+
+            if tags:
+                tags = [ [tag['name'], ",".join(tag['tags'])] for tag in tags ]
+                print(tabulate(tags, ["tag name", "tags"], tablefmt="simple"))
         elif args.listing_type == 'logs':
             entries = []
 
