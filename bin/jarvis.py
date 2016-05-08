@@ -280,6 +280,12 @@ if "__main__" == __name__:
                     # is a number.
                     json_object["id"] = int(json_object["id"])
                     check_and_create_missing_tags(json_object)
+
+                    # Change from log entry to log entry request
+                    json_object.pop('created', None)
+                    json_object.pop('id', None)
+                    json_object.pop('version', None)
+
                     log_entry = put_jarvis_resource("logentries",
                             args.log_entry_name, json_object)
 
@@ -296,6 +302,11 @@ if "__main__" == __name__:
                 if filepath:
                     json_object = convert_file_to_json(filepath)
                     check_and_create_missing_tags(json_object)
+
+                    # Change from tag to tag request
+                    json_object.pop("created", None)
+                    json_object.pop("version", None)
+
                     tag = put_jarvis_resource("tags", args.tag_name, json_object)
 
                     if tag:
