@@ -6,10 +6,15 @@ from urllib.parse import urlunsplit
 import requests
 
 
-UrlTuple = namedtuple('UrlTuple', ['scheme', 'netloc', 'path', 'query', 'fragment'])
+class DBConn(object):
+    def __init__(self, host, port):
+        self._host = host
+        self._port = port
 
-# TODO: Web API calls need to throw exceptions
-JARVIS_API_URI = "localhost:3000"
+    def connect_uri(self):
+        return "{host}:{port}".format(host=self._host, port=self._port)
+
+UrlTuple = namedtuple('UrlTuple', ['scheme', 'netloc', 'path', 'query', 'fragment'])
 
 
 def _convert(json_object):
@@ -28,8 +33,8 @@ def _convert(json_object):
         return dict([ replace_links(k, v) for k,v in json_object.items() ])
 
 
-def _get_jarvis_resource_unconverted(endpoint, resource_id):
-    r = requests.get("http://{0}/{1}/{2}".format(JARVIS_API_URI, endpoint,
+def _get_jarvis_resource_unconverted(endpoint, dbconn, resource_id):
+    r = requests.get("http://{0}/{1}/{2}".format(dbconn.connect_uri(), endpoint,
         urllib.parse.quote(resource_id)))
 
     if r.status_code == 200:
@@ -39,15 +44,15 @@ def _get_jarvis_resource_unconverted(endpoint, resource_id):
     else:
         print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
 
-def _get_jarvis_resource(endpoint, resource_id):
-    return _convert(_get_jarvis_resource_unconverted(endpoint, resource_id))
+def _get_jarvis_resource(endpoint, dbconn, resource_id):
+    return _convert(_get_jarvis_resource_unconverted(endpoint, dbconn, resource_id))
 
 get_log_entry = partial(_get_jarvis_resource, 'logentries')
 get_tag = partial(_get_jarvis_resource, 'tags')
 
 
-def _put_jarvis_resource_unconverted(endpoint, resource_id, resource_updated):
-    r = requests.put("http://{0}/{1}/{2}".format(JARVIS_API_URI, endpoint,
+def _put_jarvis_resource_unconverted(endpoint, dbconn, resource_id, resource_updated):
+    r = requests.put("http://{0}/{1}/{2}".format(dbconn.connect_uri(), endpoint,
         urllib.parse.quote(resource_id)),
             json=resource_updated)
 
@@ -59,13 +64,13 @@ def _put_jarvis_resource_unconverted(endpoint, resource_id, resource_updated):
     elif r.status_code == 404:
         print("Jarvis-api not found: {0}".format(resource_id))
 
-def put_jarvis_resource(endpoint, resource_id, resource_updated):
-    return _convert(_put_jarvis_resource_unconverted(endpoint, resource_id,
+def put_jarvis_resource(endpoint, dbconn, resource_id, resource_updated):
+    return _convert(_put_jarvis_resource_unconverted(endpoint, dbconn, resource_id,
         resource_updated))
 
 
-def _post_jarvis_resource_unconverted(endpoint, resource_request):
-    r = requests.post("http://{0}/{1}".format(JARVIS_API_URI, endpoint),
+def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request):
+    r = requests.post("http://{0}/{1}".format(dbconn.connect_uri(), endpoint),
             json=resource_request)
 
     if r.status_code == 200 or r.status_code == 201:
@@ -73,12 +78,15 @@ def _post_jarvis_resource_unconverted(endpoint, resource_request):
     else:
         print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
 
-def post_jarvis_resource(endpoint, resource_request):
-    return _convert(_post_jarvis_resource_unconverted(endpoint,
+def _post_jarvis_resource(endpoint, dbconn, resource_request):
+    return _convert(_post_jarvis_resource_unconverted(endpoint, dbconn,
         resource_request))
 
+post_log_entry = partial(_post_jarvis_resource, 'logentries')
+post_tag = partial(_post_jarvis_resource, 'tags')
 
-def _query_unconverted(endpoint, query_params):
+
+def _query_unconverted(endpoint, dbconn, query_params):
     def query_jarvis_resources(url):
         """
         Recursively query for all tags
@@ -106,9 +114,9 @@ def _query_unconverted(endpoint, query_params):
 
     query = "&".join([query_param(field, value)
         for field, value in query_params])
-    url = urlunsplit(UrlTuple("http", JARVIS_API_URI, endpoint, query, ""))
+    url = urlunsplit(UrlTuple("http", dbconn.connect_uri(), endpoint, query, ""))
 
     return query_jarvis_resources(url)
 
-def query(endpoint, query_params):
-    return [ _convert(jo) for jo in _query_unconverted(endpoint, query_params) ]
+def query(endpoint, dbconn, query_params):
+    return [ _convert(jo) for jo in _query_unconverted(endpoint, dbconn, query_params) ]

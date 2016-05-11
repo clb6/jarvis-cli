@@ -5,9 +5,11 @@ from functools import partial
 import webbrowser
 from datetime import datetime
 from tabulate import tabulate
-from jarvis_cli.client import get_tag, get_log_entry, put_jarvis_resource, \
-    post_jarvis_resource, query
+from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_jarvis_resource, \
+    post_log_entry, post_tag, query
 
+
+DBCONN = DBConn("localhost", "3000")
 
 def convert_file_to_json(file_path):
     """
@@ -190,7 +192,7 @@ if "__main__" == __name__:
     def check_and_create_missing_tags(resource_request):
         for tag_name in resource_request['tags']:
             print("Checking if tag already exists: {0}".format(tag_name))
-            if not get_tag(tag_name.lower()):
+            if not get_tag(DBCONN, tag_name.lower()):
                 try:
                     create_file_tag(tag_name)
                 except Exception as e:
@@ -234,7 +236,7 @@ if "__main__" == __name__:
 
         log_path = create_filepath("/tmp", log_id_temp)
 
-        create_file(partial(post_jarvis_resource, 'logentries'), show_file_log,
+        create_file(partial(post_log_entry, DBCONN), show_file_log,
                 "id", log_path, stub_content)
 
     def create_file_tag(tag_name):
@@ -245,7 +247,7 @@ if "__main__" == __name__:
         stub_content = "\n\n".join(["\n".join(metadata), "# {0}\n".format(tag_name)])
         tag_path = create_filepath("/tmp", tag_name)
 
-        create_file(partial(post_jarvis_resource, 'tags'), show_file_tag,
+        create_file(partial(post_tag, DBCONN), show_file_tag,
                 "name", tag_path, stub_content)
 
 
@@ -256,7 +258,7 @@ if "__main__" == __name__:
         elif args.element_type == 'tag':
             print("Checking if tag already exists: {0}".format(args.tag_name))
 
-            if get_tag(args.tag_name.lower()):
+            if get_tag(DBCONN, args.tag_name.lower()):
                 print("Tag already exists: {0}".format(args.tag_name))
             else:
                 create_file_tag(args.tag_name)
@@ -269,7 +271,7 @@ if "__main__" == __name__:
         # TODO: DRY this code?
 
         if args.element_type == 'log':
-            log_entry = get_log_entry(args.log_entry_name)
+            log_entry = get_log_entry(DBCONN, args.log_entry_name)
 
             if log_entry:
                 filepath = edit_file_log(log_entry, log_entry["id"])
@@ -286,7 +288,7 @@ if "__main__" == __name__:
                     json_object.pop('id', None)
                     json_object.pop('version', None)
 
-                    log_entry = put_jarvis_resource("logentries",
+                    log_entry = put_jarvis_resource("logentries", DBCONN,
                             args.log_entry_name, json_object)
 
                     if log_entry:
@@ -294,7 +296,7 @@ if "__main__" == __name__:
                         print("Editted: {0}, {1}".format(args.element_type,
                             args.log_entry_name))
         elif args.element_type == 'tag':
-            tag = get_tag(args.tag_name)
+            tag = get_tag(DBCONN, args.tag_name)
 
             if tag:
                 filepath = edit_file_tag(tag, tag["name"])
@@ -307,7 +309,8 @@ if "__main__" == __name__:
                     json_object.pop("created", None)
                     json_object.pop("version", None)
 
-                    tag = put_jarvis_resource("tags", args.tag_name, json_object)
+                    tag = put_jarvis_resource("tags", DBCONN, args.tag_name,
+                            json_object)
 
                     if tag:
                         show_file_tag(tag, args.tag_name)
@@ -317,11 +320,11 @@ if "__main__" == __name__:
     elif args.action_name == 'show':
 
         def get_and_show_log(log_id):
-            log_entry = get_log_entry(log_id)
+            log_entry = get_log_entry(DBCONN, log_id)
             show_file_log(log_entry, log_id)
 
         if args.show_type == 'tag':
-            tag = get_tag(args.tag_name)
+            tag = get_tag(DBCONN, args.tag_name)
             show_file_tag(tag, args.tag_name)
         elif args.show_type == 'log':
             get_and_show_log(args.log_entry_name)
@@ -332,7 +335,7 @@ if "__main__" == __name__:
     elif args.action_name == 'list':
 
         if args.listing_type == 'tags':
-            tags = query("tags", [("name", args.tag_name),
+            tags = query("tags", DBCONN, [("name", args.tag_name),
                 ("tags", args.assoc_tags)])
 
             if tags:
@@ -341,7 +344,7 @@ if "__main__" == __name__:
             else:
                 print("No tags found")
         elif args.listing_type == 'logs':
-            logs = query("logentries", [("tags", args.tag),
+            logs = query("logentries", DBCONN, [("tags", args.tag),
                 ("searchterm", args.search_term)])
 
             if logs:
