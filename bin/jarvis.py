@@ -136,9 +136,15 @@ if "__main__" == __name__:
         editor = os.environ['EDITOR']
         subprocess.call([editor, filepath])
 
-    metadata_keys_tag = ["name", "author", "created", "version", "tags"]
-    metadata_keys_log = ["id", "author", "created", "occurred", "version", "tags",
-            "parent", "todo", "setting"]
+    # Modified not allowed for edits but want in reads. Split them up.
+    metadata_keys_tag_show = ["name", "author", "created", "modified", "version",
+            "tags"]
+    metadata_keys_log_show = ["id", "author", "created", "modified", "occurred",
+            "version", "tags", "parent", "event", "todo", "setting"]
+    metadata_keys_tag_edit = [field for field in metadata_keys_tag_show if field
+            not in ["modified"]]
+    metadata_keys_log_edit = [field for field in metadata_keys_log_show if field
+            not in ["modified"]]
 
     def handle_jarvis_resource(metadata_keys, json_object, resource_id):
         if not json_object:
@@ -174,8 +180,8 @@ if "__main__" == __name__:
             open_file_in_editor(temp)
             return temp
 
-    edit_file_tag = partial(edit_file, metadata_keys_tag)
-    edit_file_log = partial(edit_file, metadata_keys_log)
+    edit_file_tag = partial(edit_file, metadata_keys_tag_edit)
+    edit_file_log = partial(edit_file, metadata_keys_log_edit)
 
     def show_file(metadata_keys, json_object, resource_id):
         temp = handle_jarvis_resource(metadata_keys, json_object, resource_id)
@@ -186,8 +192,8 @@ if "__main__" == __name__:
             # tool.
             webbrowser.open("file://{0}".format(temp))
 
-    show_file_tag = partial(show_file, metadata_keys_tag)
-    show_file_log = partial(show_file, metadata_keys_log)
+    show_file_tag = partial(show_file, metadata_keys_tag_show)
+    show_file_log = partial(show_file, metadata_keys_log_show)
 
     def check_and_create_missing_tags(resource_request):
         for tag_name in resource_request['tags']:
@@ -221,7 +227,8 @@ if "__main__" == __name__:
         created = datetime.utcnow().replace(microsecond=0)
 
         metadata = [ ("Author", AUTHOR), ("Occurred", created.isoformat()),
-                ("Tags", None), ("Parent", None), ("Todo", None), ("Setting", None) ]
+                ("Tags", None), ("Parent", None), ("Event", None), ("Todo", None),
+                ("Setting", None) ]
         metadata = [ "{0}: {1}".format(k, v if v else "")
                 for k, v in metadata ]
         stub_content = "\n".join(metadata)
