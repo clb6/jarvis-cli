@@ -5,8 +5,8 @@ from functools import partial
 import webbrowser
 from datetime import datetime
 from tabulate import tabulate
-from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_jarvis_resource, \
-    post_log_entry, post_tag, query
+from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_log_entry, \
+    put_tag, post_log_entry, post_tag, query
 
 
 DBCONN = DBConn("localhost", "3000")
@@ -295,8 +295,7 @@ if "__main__" == __name__:
                     json_object.pop('id', None)
                     json_object.pop('version', None)
 
-                    log_entry = put_jarvis_resource("logentries", DBCONN,
-                            args.log_entry_name, json_object)
+                    log_entry = put_log_entry(DBCONN, args.log_entry_name, json_object)
 
                     if log_entry:
                         show_file_log(log_entry, args.log_entry_name)
@@ -316,8 +315,7 @@ if "__main__" == __name__:
                     json_object.pop("created", None)
                     json_object.pop("version", None)
 
-                    tag = put_jarvis_resource("tags", DBCONN, args.tag_name,
-                            json_object)
+                    tag = put_tag(DBCONN, args.tag_name, json_object)
 
                     if tag:
                         show_file_tag(tag, args.tag_name)

@@ -64,9 +64,12 @@ def _put_jarvis_resource_unconverted(endpoint, dbconn, resource_id, resource_upd
     elif r.status_code == 404:
         print("Jarvis-api not found: {0}".format(resource_id))
 
-def put_jarvis_resource(endpoint, dbconn, resource_id, resource_updated):
+def _put_jarvis_resource(endpoint, dbconn, resource_id, resource_updated):
     return _convert(_put_jarvis_resource_unconverted(endpoint, dbconn, resource_id,
         resource_updated))
+
+put_log_entry = partial(_put_jarvis_resource, 'logentries')
+put_tag = partial(_put_jarvis_resource, 'tags')
 
 
 def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request):
