@@ -72,18 +72,30 @@ put_log_entry = partial(_put_jarvis_resource, 'logentries')
 put_tag = partial(_put_jarvis_resource, 'tags')
 
 
-def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request):
-    r = requests.post("http://{0}/{1}".format(dbconn.connect_uri(), endpoint),
-            json=resource_request)
+def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request, quiet,
+        skip_tags_check):
+    url = "http://{0}/{1}".format(dbconn.connect_uri(), endpoint)
+
+    if skip_tags_check:
+        url = "{0}?skipTagsCheck=true".format(url)
+
+    r = requests.post(url, json=resource_request)
 
     if r.status_code == 200 or r.status_code == 201:
         return r.json()
     else:
-        print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
+        try:
+            body = r.json()
+        except:
+            body = {}
 
-def _post_jarvis_resource(endpoint, dbconn, resource_request):
+        if not quiet:
+            print("Jarvis-api error: {0}, {1}".format(r.status_code, body))
+
+def _post_jarvis_resource(endpoint, dbconn, resource_request, quiet=False,
+        skip_tags_check=False):
     return _convert(_post_jarvis_resource_unconverted(endpoint, dbconn,
-        resource_request))
+        resource_request, quiet, skip_tags_check))
 
 post_log_entry = partial(_post_jarvis_resource, 'logentries')
 post_tag = partial(_post_jarvis_resource, 'tags')
