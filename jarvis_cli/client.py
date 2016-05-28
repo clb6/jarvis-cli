@@ -135,3 +135,10 @@ def _query_unconverted(endpoint, dbconn, query_params):
 
 def query(endpoint, dbconn, query_params):
     return [ _convert(jo) for jo in _query_unconverted(endpoint, dbconn, query_params) ]
+
+
+def get_data_summary(resource_type, dbconn):
+    url = "http://{0}/datasummary/{1}".format(dbconn.connect_uri(), resource_type)
+    r = requests.get(url)
+    r.raise_for_status()
+    return r.json()

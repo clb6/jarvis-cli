@@ -6,7 +6,7 @@ import webbrowser
 from datetime import datetime
 from tabulate import tabulate
 from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_log_entry, \
-    put_tag, post_log_entry, post_tag, query
+    put_tag, post_log_entry, post_tag, query, get_data_summary
 
 
 DBCONN = DBConn("localhost", "3000")
@@ -122,6 +122,9 @@ if "__main__" == __name__:
     parser_list_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
     parser_list_logs.add_argument('-s', '--search', nargs='?', dest='search_term',
             help='Search term')
+
+    # Data summary
+    parser_summary = subparsers.add_parser('summary', help='Show data summary')
 
     args = parser.parse_args()
 
@@ -409,3 +412,10 @@ if "__main__" == __name__:
         else:
             raise NotImplementedError("Unknown listing type: {0}"
                     .format(args.show_type))
+
+    elif args.action_name == 'summary':
+
+        columns = list(get_data_summary("tags", DBCONN).keys())
+        summaries = [ list(get_data_summary(rt, DBCONN).values())
+                for rt in ["tags", "logentries"] ]
+        print(tabulate(summaries, columns, tablefmt="simple"))
