@@ -75,17 +75,18 @@ if "__main__" == __name__:
             dest='action_name')
 
     # New actions
-    parser_new = subparsers.add_parser('new', help='Create an information element')
-    subparsers_new = parser_new.add_subparsers(help='Types of new information element',
-            dest='element_type')
+    parser_new = subparsers.add_parser('new', help='Create a new Jarvis resource')
+    subparsers_new = parser_new.add_subparsers(help='Types of Jarvis resources',
+            dest='resource_type')
     parser_new_log = subparsers_new.add_parser('log', help='Create a new log entry')
-    parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag element')
+    parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag')
     parser_new_tag.add_argument('tag_name', help='Tag name')
+    parser_new_event = subparsers_new.add_parser('event', help='Create a new event')
 
     # Edit actions
     parser_edit = subparsers.add_parser('edit', help='Edit an information element')
     subparsers_edit = parser_edit.add_subparsers(help='Types of information element',
-            dest='element_type')
+            dest='resource_type')
 
     parser_edit_log = subparsers_edit.add_parser('log', help='Edit an existing log entry')
     parser_edit_log.add_argument('log_entry_name', help='Log name')
@@ -263,24 +264,26 @@ if "__main__" == __name__:
 
     if args.action_name == 'new':
 
-        if args.element_type == 'log':
+        if args.resource_type == 'log':
             create_file_log()
-        elif args.element_type == 'tag':
+        elif args.resource_type == 'tag':
             print("Checking if tag already exists: {0}".format(args.tag_name))
 
             if get_tag(DBCONN, args.tag_name.lower()):
                 print("Tag already exists: {0}".format(args.tag_name))
             else:
                 create_file_tag(args.tag_name)
+        elif args.resource_type == 'event':
+            print("Create event here!")
         else:
             raise NotImplementedError("Unknown information type: {0}"
-                    .format(args.element_type))
+                    .format(args.resource_type))
 
     elif args.action_name == 'edit':
 
         # TODO: DRY this code?
 
-        if args.element_type == 'log':
+        if args.resource_type == 'log':
             log_entry = get_log_entry(DBCONN, args.log_entry_name)
 
             if log_entry:
@@ -302,9 +305,9 @@ if "__main__" == __name__:
 
                     if log_entry:
                         show_file_log(log_entry, args.log_entry_name)
-                        print("Editted: {0}, {1}".format(args.element_type,
+                        print("Editted: {0}, {1}".format(args.resource_type,
                             args.log_entry_name))
-        elif args.element_type == 'tag':
+        elif args.resource_type == 'tag':
             tag = get_tag(DBCONN, args.tag_name)
 
             if tag:
@@ -322,7 +325,7 @@ if "__main__" == __name__:
 
                     if tag:
                         show_file_tag(tag, args.tag_name)
-                        print("Editted: {0}, {1}".format(args.element_type,
+                        print("Editted: {0}, {1}".format(args.resource_type,
                             args.tag_name))
 
     elif args.action_name == 'show':
