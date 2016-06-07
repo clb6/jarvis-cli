@@ -5,8 +5,10 @@ from functools import partial
 import webbrowser
 from datetime import datetime
 from tabulate import tabulate
+# REVIEW: dateparser vs dateutil
+import dateparser
 from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_log_entry, \
-    put_tag, post_log_entry, post_tag, query, get_data_summary
+    put_tag, post_log_entry, post_tag, post_event, query, get_data_summary
 
 
 DBCONN = DBConn("localhost", "3000")
@@ -66,6 +68,12 @@ def create_filepath(file_dir, file_name):
     """
     file_name = file_name if ".md" in file_name else "{0}.md".format(file_name)
     return os.path.join(file_dir, file_name)
+
+def generate_id(some_datetime):
+    # WATCH! datetime.fromtimestamp(0) is not Unix epoch and returns
+    # 1969-12-31 19:00 instead.
+    epoch = datetime(1970, 1, 1)
+    return str(int((some_datetime - epoch).total_seconds()))
 
 
 if "__main__" == __name__:
@@ -237,13 +245,10 @@ if "__main__" == __name__:
                 for k, v in metadata ]
         stub_content = "\n".join(metadata)
 
-        # datetime.fromtimestamp(0) is not Unix epoch and returns
-        # 1969-12-31 19:00 instead.
-        epoch = datetime(1970, 1, 1)
         # Need a temporary log id because the log id actually gets created by
         # the API.
         log_id_temp = "jarvis_log_{0}" \
-            .format(str(int((created - epoch).total_seconds())))
+            .format(generate_id(created))
 
         log_path = create_filepath("/tmp", log_id_temp)
 
@@ -274,7 +279,40 @@ if "__main__" == __name__:
             else:
                 create_file_tag(args.tag_name)
         elif args.resource_type == 'event':
-            print("Create event here!")
+            occurred = dateparser.parse(input("When occurred [default: now]?: "))
+            occurred = occurred or datetime.utcnow()
+
+            categories = ["consumed", "produced", "experienced", "executed",
+                    "detected"]
+            while True:
+                category = input("Event category [options: {0}]: ".format(categories))
+
+                if category in categories:
+                    break
+
+            while True:
+                weight = input("Event weight [default: 0]: ") or "0"
+
+                try:
+                    weight = int(weight)
+                    break
+                except:
+                    pass
+
+            filepath = create_filepath("/tmp",
+                    "jarvis_event_{0}".format(generate_id(occurred)))
+            open_file_in_editor(filepath)
+
+            with open(filepath, 'r') as f:
+                description = f.read()
+
+            request = { "occurred": occurred.isoformat(), "category": category,
+                    "source": "jarvis-cli", "weight": weight,
+                    "description": description }
+            response = post_event(DBCONN, request)
+
+            if response:
+                print("Created: {0}".format(response.get("eventId")))
         else:
             raise NotImplementedError("Unknown information type: {0}"
                     .format(args.resource_type))

@@ -100,6 +100,10 @@ def _post_jarvis_resource(endpoint, dbconn, resource_request, quiet=False,
 post_log_entry = partial(_post_jarvis_resource, 'logentries')
 post_tag = partial(_post_jarvis_resource, 'tags')
 
+def post_event(dbconn, event_request, quiet=False):
+    # FIXME: Events don't use skip_tags..
+    return _post_jarvis_resource_unconverted('events', dbconn, event_request,
+            quiet=quiet, skip_tags_check=False)
 
 def _query_unconverted(endpoint, dbconn, query_params):
     def query_jarvis_resources(url):
