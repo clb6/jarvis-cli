@@ -457,7 +457,22 @@ if "__main__" == __name__:
             else:
                 print("No log entries found")
         elif args.listing_type == 'events':
-            print("List events")
+            # TODO: Show table view vs list view
+            query_params = [('category', args.category), ('weight', args.weight)]
+            query_params = [ qp for qp in query_params if qp[1] != None ]
+
+            events = query('events', DBCONN, query_params)
+
+            if events:
+                fields = ['category', 'created', 'weight', 'description', 'eventId']
+
+                def show_event(e):
+                    return [ e[field] for field in fields ]
+
+                events = [ show_event(e) for e in events ]
+                print(tabulate(events, fields, tablefmt="simple"))
+            else:
+                print("No events found")
         else:
             raise NotImplementedError("Unknown listing type: {0}"
                     .format(args.show_type))
