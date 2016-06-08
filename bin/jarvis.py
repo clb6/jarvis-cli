@@ -7,6 +7,7 @@ from datetime import datetime
 from tabulate import tabulate
 # REVIEW: dateparser vs dateutil
 import dateparser
+import jarvis_cli as jc
 from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_log_entry, \
     put_tag, post_log_entry, post_tag, post_event, query, get_data_summary
 
@@ -118,19 +119,25 @@ if "__main__" == __name__:
     parser_show_tag.add_argument('tag_name', help='Tag name')
 
     # List actions
-    parser_list = subparsers.add_parser('list', help='List information elements')
+    parser_list = subparsers.add_parser('list', help='List Jarvis resources')
     subparsers_list = parser_list.add_subparsers(help='Types of list actions',
             dest='listing_type')
 
-    parser_list_tags = subparsers_list.add_parser('tags', help='List all tags')
+    parser_list_tags = subparsers_list.add_parser('tags', help='List tags')
     parser_list_tags.add_argument('-n', '--tag-name', nargs='?', help='Search by tag name')
     parser_list_tags.add_argument('-a', '--assoc-tags', nargs='?',
         help='Search by associated tags')
 
-    parser_list_logs = subparsers_list.add_parser('logs', help='List all logs')
+    parser_list_logs = subparsers_list.add_parser('logs', help='List log entries')
     parser_list_logs.add_argument('-t', '--tag', nargs='?', help='Tag to search')
     parser_list_logs.add_argument('-s', '--search', nargs='?', dest='search_term',
             help='Search term')
+
+    parser_list_events = subparsers_list.add_parser('events', help='List events')
+    parser_list_events.add_argument('-c', '--category', nargs='?',
+            choices=jc.EVENT_CATEGORIES, help='Event category')
+    parser_list_events.add_argument('-w', '--weight', nargs='?', type=int,
+            help='Event weight lower bound')
 
     # Data summary
     parser_summary = subparsers.add_parser('summary', help='Show data summary')
@@ -282,12 +289,11 @@ if "__main__" == __name__:
             occurred = dateparser.parse(input("When occurred [default: now]?: "))
             occurred = occurred or datetime.utcnow()
 
-            categories = ["consumed", "produced", "experienced", "executed",
-                    "detected"]
             while True:
-                category = input("Event category [options: {0}]: ".format(categories))
+                category = input("Event category [options: {0}]: ".format(
+                    jc.EVENT_CATEGORIES))
 
-                if category in categories:
+                if category in jc.EVENT_CATEGORIES:
                     break
 
             while True:
@@ -307,8 +313,8 @@ if "__main__" == __name__:
                 description = f.read()
 
             request = { "occurred": occurred.isoformat(), "category": category,
-                    "source": "jarvis-cli", "weight": weight,
-                    "description": description }
+                    "source": "jarvis-cli:{0}".format(jc.__version__),
+                    "weight": weight, "description": description }
             response = post_event(DBCONN, request)
 
             if response:
@@ -450,6 +456,8 @@ if "__main__" == __name__:
                 print("\n\nLog entries found: {0}".format(len(logs)))
             else:
                 print("No log entries found")
+        elif args.listing_type == 'events':
+            print("List events")
         else:
             raise NotImplementedError("Unknown listing type: {0}"
                     .format(args.show_type))
