@@ -297,7 +297,9 @@ if "__main__" == __name__:
                     break
 
             while True:
-                weight = input("Event weight [default: 0]: ") or "0"
+                default = jc.EVENT_CATEGORIES_TO_DEFAULTS.get(category)
+                weight = input("Event weight [default: {0}]: ".format(default)) \
+                    or default
 
                 try:
                     weight = int(weight)
