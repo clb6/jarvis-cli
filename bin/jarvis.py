@@ -466,10 +466,15 @@ if "__main__" == __name__:
             events = query('events', DBCONN, query_params)
 
             if events:
-                fields = ['category', 'created', 'weight', 'description', 'eventId']
+                fields = ['category', 'occurred', 'weight', 'description', 'eventId']
 
                 def show_event(e):
-                    return [ e[field] for field in fields ]
+                    def truncate_string(e):
+                        cutoff = 40
+                        return e[:cutoff] if isinstance(e, str) and len(e) > cutoff \
+                            else e
+
+                    return [ truncate_string(e[field]) for field in fields ]
 
                 events = [ show_event(e) for e in events ]
                 print(tabulate(events, fields, tablefmt="simple"))
