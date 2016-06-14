@@ -1,0 +1,3 @@
+
+class JarvisCliConfigError(RuntimeError):
+    pass

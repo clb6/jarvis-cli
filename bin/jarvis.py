@@ -8,11 +8,10 @@ from tabulate import tabulate
 # REVIEW: dateparser vs dateutil
 import dateparser
 import jarvis_cli as jc
-from jarvis_cli.client import DBConn, get_tag, get_log_entry, put_log_entry, \
+from jarvis_cli import config
+from jarvis_cli.client import get_tag, get_log_entry, put_log_entry, \
     put_tag, post_log_entry, post_tag, post_event, query, get_data_summary
 
-
-DBCONN = DBConn("localhost", "3000")
 
 def convert_file_to_json(file_path):
     """
@@ -79,6 +78,9 @@ def generate_id(some_datetime):
 
 if "__main__" == __name__:
     parser = argparse.ArgumentParser(description='Jarvis is used for personal information management')
+
+    parser.add_argument('-e', '--environment', nargs='?', default="default",
+            help="Jarvis environment name found in the cli_config.ini")
 
     subparsers = parser.add_subparsers(help='Actions for Jarvis',
             dest='action_name')
@@ -150,6 +152,8 @@ if "__main__" == __name__:
     # through. The required flag doesn't seem to be reinforced so the following
     # is acceptable to Argparse which sucks for me:
     #   jarvis.py new
+
+    DBCONN = config.get_client_connection(args.environment)
 
     def open_file_in_editor(filepath):
         editor = os.environ['EDITOR']
