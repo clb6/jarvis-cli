@@ -4,13 +4,26 @@ Jarvis is a personal information management project.  It is a tool to help colle
 
 ## Setup
 
+### Environment Variables
+
 Jarvis requires the following environmental variables to be configured:
 
 Variable Name | Description
 ------------- | -----------
 EDITOR | The editor application name
-JARVIS_DIR_ROOT | The full path to the root directory of where all the content will be written to
 JARVIS_AUTHOR | The author of the content
+
+### Configuration File
+
+A configuration file is required in the following directory path: `$HOME/.jarvis/cli_config.ini`.  Each subsection is an environment and the only environment required is `default`.  Example,
+
+```
+[default]
+host = localhost
+port = 3000
+```
+
+### Viewing Markdown
 
 In addition, the codebase uses the [`webbrowser`](https://docs.python.org/3/library/webbrowser.html) Python module which in turn on Unix machines uses the `xdg` tools to perform the launching of files.  If you wish to open the markdown files in your default browser because it has a nice markdown previewing extension, please change the **mimeapps.list** file to map the markdown mime type to the appropriate application like so:
 
@@ -35,18 +48,4 @@ The goal to absorbing, to experiencing, to learning in life is to curate knowled
 ### Tags
 
 People, places, things, concepts that best define what we experience or best describes what we are trying to capture.
-
-## Commands
-
-Command | Type | Description
-------- | ---- | -----------
-new     | log  | creates a new instance of a log entry
-new     | tag  | creates a new instance of a tag
-edit    | log  | edit an existing log entry
-edit    | tag  | edit an existing tag
-list    | logs | list all logs for a given tag
-list    | tags | list all tags
-show    | lastlog | show the last log for a given tag
-show    | log  | show log entry
-show    | tag  | show tag
 
