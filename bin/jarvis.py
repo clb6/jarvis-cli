@@ -55,11 +55,15 @@ def convert_file_to_json(file_path):
         t = [ parse_metadata(line) for line in metadata.split('\n') ]
 
         response = dict(t)
-        response['tags'] = response['tags'].split(', ')
-        # Handle scenario when there are no tags which will return an empty
-        # string. Also strip the unnecessary whitespaces.
-        response['tags'] = [ tag.strip() for tag in response['tags'] if tag ]
-        response['body'] = body
+
+        if "tags" in response:
+            response['tags'] = response['tags'].split(', ')
+            # Handle scenario when there are no tags which will return an empty
+            # string. Also strip the unnecessary whitespaces.
+            response['tags'] = [ tag.strip() for tag in response['tags'] if tag ]
+        if body.strip():
+            response['body'] = body
+
         return response
 
 def create_filepath(file_dir, file_name):
@@ -104,6 +108,9 @@ if "__main__" == __name__:
 
     parser_edit_tag = subparsers_edit.add_parser('tag', help='Edit an existing tag element')
     parser_edit_tag.add_argument('tag_name', help='Tag name')
+
+    parser_edit_event = subparsers_edit.add_parser('event', help='Edit event')
+    parser_edit_event.add_argument('event_id', help='Event id')
 
     # Show actions
     parser_show = subparsers.add_parser('show', help='Show information elements')
@@ -174,6 +181,8 @@ if "__main__" == __name__:
             not in ["modified"]]
     metadata_keys_log_edit = [field for field in metadata_keys_log_show if field
             not in ["modified"]]
+    metadata_keys_event_edit = [field for field in metadata_keys_event_show if field
+            not in ["eventId", "created"]]
 
     def handle_jarvis_resource(metadata_keys, json_object, resource_id):
         if not json_object:
@@ -199,7 +208,9 @@ if "__main__" == __name__:
             if "body" in json_object:
                 return "\n\n".join([ metadata, json_object.get("body") ])
             else:
-                return metadata
+                # HACK: The hardcoded "\n\n" is necessary bc
+                # convert_file_to_json expects it.
+                return metadata + "\n\n"
 
         with open(temp, 'w') as f:
             f.write(convert_json_to_file(metadata_keys, json_object))
@@ -215,6 +226,7 @@ if "__main__" == __name__:
 
     edit_file_tag = partial(edit_file, metadata_keys_tag_edit)
     edit_file_log = partial(edit_file, metadata_keys_log_edit)
+    edit_file_event = partial(edit_file, metadata_keys_event_edit)
 
     def show_file(metadata_keys, json_object, resource_id):
         temp = handle_jarvis_resource(metadata_keys, json_object, resource_id)
@@ -385,6 +397,13 @@ if "__main__" == __name__:
 
             edit_resource(client.get_tag, client.put_tag, edit_file_tag, show_file_tag,
                     post_edit_tag, args.tag_name)
+        elif args.resource_type == 'event':
+            def post_edit_event(json_object):
+                json_object["weight"] = int(json_object["weight"])
+                return json_object
+
+            edit_resource(client.get_event, client.put_event, edit_file_event,
+                    show_file_event, post_edit_event, args.event_id)
 
     elif args.action_name == 'show':
 

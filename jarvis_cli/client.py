@@ -71,6 +71,7 @@ def _put_jarvis_resource(endpoint, dbconn, resource_id, resource_updated):
 
 put_log_entry = partial(_put_jarvis_resource, 'logentries')
 put_tag = partial(_put_jarvis_resource, 'tags')
+put_event = partial(_put_jarvis_resource, 'events')
 
 
 def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request, quiet,
