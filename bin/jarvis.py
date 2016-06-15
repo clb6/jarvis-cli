@@ -501,5 +501,5 @@ if "__main__" == __name__:
 
         columns = list(get_data_summary("tags", DBCONN).keys())
         summaries = [ list(get_data_summary(rt, DBCONN).values())
-                for rt in ["tags", "logentries"] ]
+                for rt in ["tags", "logentries", "events"] ]
         print(tabulate(summaries, columns, tablefmt="simple"))
