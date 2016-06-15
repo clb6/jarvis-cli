@@ -342,52 +342,49 @@ if "__main__" == __name__:
 
     elif args.action_name == 'edit':
 
-        # TODO: DRY this code?
+        def edit_resource(get_func, put_func, edit_file_func, show_file_func,
+                post_edit_func, resource_id):
+            resource = get_func(DBCONN, resource_id)
+
+            if resource:
+                filepath = edit_file_func(resource, resource_id)
+
+                if filepath:
+                    json_object = convert_file_to_json(filepath)
+                    json_object = post_edit_func(json_object)
+
+                    resource = put_func(DBCONN, resource_id, json_object)
+
+                    if resource:
+                        show_file_func(resource, resource_id)
+                        print("Editted: {0}".format(resource_id))
 
         if args.resource_type == 'log':
-            log_entry = get_log_entry(DBCONN, args.log_entry_name)
+            def post_edit_log(json_object):
+                # WATCH! This specialty code here because the LogEntry.id
+                # is a number.
+                json_object["id"] = int(json_object["id"])
+                check_and_create_missing_tags(json_object)
 
-            if log_entry:
-                filepath = edit_file_log(log_entry, log_entry["id"])
+                # Change from log entry to log entry request
+                json_object.pop('created', None)
+                json_object.pop('id', None)
+                json_object.pop('version', None)
+                return json_object
 
-                if filepath:
-                    json_object = convert_file_to_json(filepath)
-                    # WATCH! This specialty code here because the LogEntry.id
-                    # is a number.
-                    json_object["id"] = int(json_object["id"])
-                    check_and_create_missing_tags(json_object)
-
-                    # Change from log entry to log entry request
-                    json_object.pop('created', None)
-                    json_object.pop('id', None)
-                    json_object.pop('version', None)
-
-                    log_entry = put_log_entry(DBCONN, args.log_entry_name, json_object)
-
-                    if log_entry:
-                        show_file_log(log_entry, args.log_entry_name)
-                        print("Editted: {0}, {1}".format(args.resource_type,
-                            args.log_entry_name))
+            edit_resource(client.get_log_entry, client.put_log_entry, edit_file_log,
+                    show_file_log, post_edit_log, args.log_entry_name)
         elif args.resource_type == 'tag':
-            tag = get_tag(DBCONN, args.tag_name)
+            def post_edit_tag(json_object):
+                check_and_create_missing_tags(json_object)
 
-            if tag:
-                filepath = edit_file_tag(tag, tag["name"])
+                # Change from tag to tag request
+                json_object.pop("created", None)
+                json_object.pop("version", None)
+                return json_object
 
-                if filepath:
-                    json_object = convert_file_to_json(filepath)
-                    check_and_create_missing_tags(json_object)
-
-                    # Change from tag to tag request
-                    json_object.pop("created", None)
-                    json_object.pop("version", None)
-
-                    tag = put_tag(DBCONN, args.tag_name, json_object)
-
-                    if tag:
-                        show_file_tag(tag, args.tag_name)
-                        print("Editted: {0}, {1}".format(args.resource_type,
-                            args.tag_name))
+            edit_resource(client.get_tag, client.put_tag, edit_file_tag, show_file_tag,
+                    post_edit_tag, args.tag_name)
 
     elif args.action_name == 'show':
 
