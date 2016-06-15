@@ -8,7 +8,7 @@ from tabulate import tabulate
 # REVIEW: dateparser vs dateutil
 import dateparser
 import jarvis_cli as jc
-from jarvis_cli import config
+from jarvis_cli import config, client
 from jarvis_cli.client import get_tag, get_log_entry, put_log_entry, \
     put_tag, post_log_entry, post_tag, post_event, query, get_data_summary
 
@@ -108,17 +108,21 @@ if "__main__" == __name__:
     # Show actions
     parser_show = subparsers.add_parser('show', help='Show information elements')
     subparsers_show = parser_show.add_subparsers(help='Types of show actions',
-            dest='show_type')
+            dest='resource_type')
 
-    parser_show_lastlog = subparsers_show.add_parser('lastlog',
-            help='Open last log entry in the browser')
-    parser_show_lastlog.add_argument('-t', '--tag', nargs='?', help='Tag to search')
+    # TODO: Reimplement
+    #parser_show_lastlog = subparsers_show.add_parser('lastlog',
+    #        help='Open last log entry in the browser')
+    #parser_show_lastlog.add_argument('-t', '--tag', nargs='?', help='Tag to search')
 
     parser_show_log = subparsers_show.add_parser('log', help='Open log entry in the browser')
     parser_show_log.add_argument('log_entry_name', help='Log name')
 
     parser_show_tag = subparsers_show.add_parser('tag', help='Open tag in the browser')
     parser_show_tag.add_argument('tag_name', help='Tag name')
+
+    parser_show_event = subparsers_show.add_parser('event', help='Get and show event')
+    parser_show_event.add_argument('event_id', help='Event id')
 
     # List actions
     parser_list = subparsers.add_parser('list', help='List Jarvis resources')
@@ -164,6 +168,8 @@ if "__main__" == __name__:
             "tags"]
     metadata_keys_log_show = ["id", "author", "created", "modified", "occurred",
             "version", "tags", "parent", "event", "todo", "setting"]
+    metadata_keys_event_show = ["eventId", "created", "occurred", "category",
+            "source", "weight", "description"]
     metadata_keys_tag_edit = [field for field in metadata_keys_tag_show if field
             not in ["modified"]]
     metadata_keys_log_edit = [field for field in metadata_keys_log_show if field
@@ -189,7 +195,11 @@ if "__main__" == __name__:
                     for k in metadata_keys ]
             metadata = "\n".join(metadata)
 
-            return "\n\n".join([ metadata, json_object.get("body") ])
+            # Events don't have bodies
+            if "body" in json_object:
+                return "\n\n".join([ metadata, json_object.get("body") ])
+            else:
+                return metadata
 
         with open(temp, 'w') as f:
             f.write(convert_json_to_file(metadata_keys, json_object))
@@ -217,6 +227,7 @@ if "__main__" == __name__:
 
     show_file_tag = partial(show_file, metadata_keys_tag_show)
     show_file_log = partial(show_file, metadata_keys_log_show)
+    show_file_event = partial(show_file, metadata_keys_event_show)
 
     def check_and_create_missing_tags(resource_request):
         for tag_name in resource_request['tags']:
@@ -380,18 +391,16 @@ if "__main__" == __name__:
 
     elif args.action_name == 'show':
 
-        def get_and_show_log(log_id):
-            log_entry = get_log_entry(DBCONN, log_id)
-            show_file_log(log_entry, log_id)
+        def get_and_show_resource(get_func, show_file_func, resource_id):
+            resource = get_func(DBCONN, resource_id)
+            show_file_func(resource, resource_id)
 
-        if args.show_type == 'tag':
-            tag = get_tag(DBCONN, args.tag_name)
-            show_file_tag(tag, args.tag_name)
-        elif args.show_type == 'log':
-            get_and_show_log(args.log_entry_name)
-        else:
-            raise NotImplementedError("Unknown show type: {0}"
-                    .format(args.show_type))
+        if args.resource_type == 'tag':
+            get_and_show_resource(client.get_tag, show_file_tag, args.tag_name)
+        elif args.resource_type == 'log':
+            get_and_show_resource(client.get_log_entry, show_file_log, args.log_entry_name)
+        elif args.resource_type == "event":
+            get_and_show_resource(client.get_event, show_file_event, args.event_id)
 
     elif args.action_name == 'list':
 
