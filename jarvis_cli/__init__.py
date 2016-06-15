@@ -1,5 +1,5 @@
 
-__version__ = '0.9.0'
+__version__ = '0.10.0'
 
 EVENT_CATEGORIES_TO_DEFAULTS = {
         "consumed": 100,
