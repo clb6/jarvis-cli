@@ -8,7 +8,7 @@ setup(
         author = "Michael Hwang",
         author_email = "hirehwnag@gmail.com",
         description = ("Jarvis command-line tool"),
-        scripts=['bin/jarvis.py', 'bin/jarvis_migrate.py'],
+        scripts=['bin/jarvis.py'],
         install_requires=['requests', 'tabulate', 'dateparser<1.0.0'],
         zip_safe = False
         )

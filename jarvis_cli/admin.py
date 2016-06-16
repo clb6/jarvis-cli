@@ -1,6 +1,6 @@
-import subprocess, os
+import subprocess, os, time
 from datetime import datetime
-from jarvis_cli import config
+from jarvis_cli import config, client
 
 
 def create_snapshot(environment):
@@ -27,3 +27,54 @@ def create_snapshot(environment):
             pass
 
         print(cp.stdout)
+
+
+# TODO: Must test. This code was lifted from jarvis_migrate.py and reworked to be
+# library calls.
+def _migrate_resources(resource_type, conn_prev, transform_func, post_to_new_func):
+    to_migrate = [ transform_func(r)
+            for r in client.query(resource_type, conn_prev, []) ]
+
+    print("Migrate #{0}: {1}".format(resource_type, len(to_migrate)))
+
+    def migrate_reverse_result(r_prev):
+        return None if post_to_new_func(r_prev) else r_prev
+
+    start_time = time.time()
+    results = [ migrate_reverse_result(r_prev) for r_prev in to_migrate ]
+
+    num_attempted = len(to_migrate)
+    num_succeeded = len(list(filter(lambda x: not x, results)))
+    print("#attempted: {0}, #succeeded: {1}, elapsed: {2}s".format(
+        num_attempted, num_succeeded, time.time()-start_time))
+
+def migrate(resource_type, conn_prev, conn_next):
+    if "tag" in resource_type:
+
+        def transform(tag):
+            """Transform to tag request"""
+            del tag['version']
+            return tag
+
+        # NOTE!
+        # 1. Errors regardless of whether 400 or 409 are treated equally.
+        # 2. The method "migrate_tags" was written before the "skip_tags_check"
+        # came out. Originally thought tags could be migrated without it but then
+        # realized that there are circular relationships
+
+        def post_to_new(tag_prev):
+            return client.post_tag(conn_next, tag_prev, skip_tags_check=True)
+
+        _migrate_resources("tags", conn_prev, transform, post_to_new)
+
+    elif "log" in resource_type:
+
+        def transform(log_entry):
+            """Transform to log entry request"""
+            del log_entry['version']
+            return log_entry
+
+        def post_to_new(log_entry_prev):
+            return client.post_log_entry(conn_next, log_entry_prev)
+
+        _migrate_resources("logentries", conn_prev, transform, post_to_new)
