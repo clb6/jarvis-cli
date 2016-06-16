@@ -8,7 +8,7 @@ from tabulate import tabulate
 # REVIEW: dateparser vs dateutil
 import dateparser
 import jarvis_cli as jc
-from jarvis_cli import config, client
+from jarvis_cli import config, client, admin
 from jarvis_cli.client import get_tag, get_log_entry, put_log_entry, \
     put_tag, post_log_entry, post_tag, post_event, query, get_data_summary
 
@@ -154,6 +154,14 @@ if "__main__" == __name__:
 
     # Data summary
     parser_summary = subparsers.add_parser('summary', help='Show data summary')
+
+    # Admin actions
+    parser_admin = subparsers.add_parser('admin', help='Administrative actions')
+    subparsers_admin = parser_admin.add_subparsers(help='Types of admin actions',
+            dest='admin_type')
+
+    parser_admin_backup = subparsers_admin.add_parser('backup',
+            help='Create a new snapshot')
 
     args = parser.parse_args()
 
@@ -519,3 +527,13 @@ if "__main__" == __name__:
         summaries = [ list(get_data_summary(rt, DBCONN).values())
                 for rt in ["tags", "logentries", "events"] ]
         print(tabulate(summaries, columns, tablefmt="simple"))
+
+    elif args.action_name == 'admin':
+
+        if args.admin_type == 'backup':
+            filepath = admin.create_snapshot(args.environment)
+
+            if filepath:
+                print("Backing up successful: {0}".format(filepath))
+            else:
+                print("Backing up failed")
