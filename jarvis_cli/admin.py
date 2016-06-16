@@ -1,4 +1,4 @@
-import subprocess, os, time
+import subprocess, os, time, shutil
 from datetime import datetime
 from jarvis_cli import config, client
 
@@ -27,6 +27,34 @@ def create_snapshot(environment):
             pass
 
         print(cp.stdout)
+
+
+def restore_snapshot(environment, snapshot_filepath):
+    if not os.path.isfile(snapshot_filepath):
+        print("Snapshot file does not exist: {0}".format(snapshot_filepath))
+
+    data_dir = config.get_jarvis_data_directory(environment)
+    data_top_dirname = os.path.dirname(data_dir)
+
+    # Move current data directory to a temp
+    data_dir_prev = os.path.join(data_top_dirname, "jarvis_prev")
+    os.rename(data_dir, data_dir_prev)
+
+    cmd = ["tar", "-xf", snapshot_filepath, "-C", data_top_dirname]
+    cp = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    if cp.returncode == 0:
+        if data_dir_prev:
+            shutil.rmtree(data_dir_prev)
+        return True
+    else:
+        print(cp.stdout)
+
+        # Something bad happened so go back to previous version
+        shutil.rmtree(data_dir)
+        os.rename(data_dir_prev, data_dir)
+        return False
+
 
 
 # TODO: Must test. This code was lifted from jarvis_migrate.py and reworked to be
