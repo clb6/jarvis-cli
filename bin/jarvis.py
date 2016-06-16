@@ -163,6 +163,11 @@ if "__main__" == __name__:
     parser_admin_backup = subparsers_admin.add_parser('backup',
             help='Create a new snapshot')
 
+    parser_admin_restore = subparsers_admin.add_parser('restore',
+            help='Restore from an existing snapshot')
+    parser_admin_restore.add_argument('--snapshot-path', nargs='?', required=True,
+            help='Path to snapshot used to restore')
+
     args = parser.parse_args()
 
     # NOTE: Argparse should filter and validate and ensure that only the known
@@ -537,3 +542,8 @@ if "__main__" == __name__:
                 print("Backing up successful: {0}".format(filepath))
             else:
                 print("Backing up failed")
+        elif args.admin_type == 'restore':
+            if admin.restore_snapshot(args.environment, args.snapshot_path):
+                print("Restore successful")
+            else:
+                print("Restore failed")
