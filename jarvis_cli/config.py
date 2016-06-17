@@ -1,32 +1,30 @@
 import os
+from functools import partial
 import configparser
 from jarvis_cli.exceptions import JarvisCliConfigError
 from jarvis_cli.client import DBConn
 
-JARVIS_CLI_DIRECTORY = os.path.join(os.environ["HOME"], ".jarvis")
+JARVIS_CLI_CONFIG_PATH = os.path.join(os.environ["HOME"], ".jarvis", "cli_config.ini")
 
 
-def _get_config(environment):
+def get_config_map(environment, config_path):
     config = configparser.ConfigParser()
-    config_path = os.path.join(JARVIS_CLI_DIRECTORY, "cli_config.ini")
 
     if config.read(config_path):
         return config[environment]
     else:
         raise JarvisCliConfigError("Configuration not setup: {0}".format(config_path))
 
-def get_client_connection(environment):
-    config = _get_config(environment)
-    return DBConn(config["host"], config["port"])
+def _get_config_param(key, config_map):
+    return config_map[key]
 
-def get_jarvis_data_directory(environment):
-    config = _get_config(environment)
-    return config["data_directory"]
+get_host = partial(_get_config_param, "host")
+get_port = partial(_get_config_param, "port")
+get_jarvis_data_directory = partial(_get_config_param, "data_directory")
+get_jarvis_snapshots_directory = partial(_get_config_param, "snapshots_directory")
+get_author = partial(_get_config_param, "author")
 
-def get_jarvis_snapshots_directory(environment):
-    config = _get_config(environment)
-    return config["snapshots_directory"]
-
-def get_author(environment):
-    config = _get_config(environment)
-    return config["author"]
+def get_client_connection(config_map):
+    host = get_host(config_map)
+    port = get_port(config_map)
+    return DBConn(host, port)

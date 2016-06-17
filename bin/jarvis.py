@@ -85,6 +85,8 @@ if "__main__" == __name__:
 
     parser.add_argument('-e', '--environment', nargs='?', default="default",
             help="Jarvis environment name found in the cli_config.ini")
+    parser.add_argument('--config-path', nargs='?', default=config.JARVIS_CLI_CONFIG_PATH,
+            help="Path to Jarvis cli configuration file")
 
     subparsers = parser.add_subparsers(help='Actions for Jarvis',
             dest='action_name')
@@ -177,7 +179,8 @@ if "__main__" == __name__:
     # is acceptable to Argparse which sucks for me:
     #   jarvis.py new
 
-    DBCONN = config.get_client_connection(args.environment)
+    config_map = config.get_config_map(args.environment, args.config_path)
+    DBCONN = config.get_client_connection(config_map)
 
     def open_file_in_editor(filepath):
         editor = os.environ['EDITOR']
@@ -280,7 +283,7 @@ if "__main__" == __name__:
             show_file_func(resource, resource_id)
             print("Created: {0}".format(resource_id))
 
-    AUTHOR = config.get_author(args.environment)
+    AUTHOR = config.get_author(config_map)
 
     def create_file_log():
         created = datetime.utcnow().replace(microsecond=0)
@@ -536,14 +539,14 @@ if "__main__" == __name__:
     elif args.action_name == 'admin':
 
         if args.admin_type == 'backup':
-            filepath = admin.create_snapshot(args.environment)
+            filepath = admin.create_snapshot(args.environment, config_map)
 
             if filepath:
                 print("Backing up successful: {0}".format(filepath))
             else:
                 print("Backing up failed")
         elif args.admin_type == 'restore':
-            if admin.restore_snapshot(args.environment, args.snapshot_path):
+            if admin.restore_snapshot(config_map, args.snapshot_path):
                 print("Restore successful")
             else:
                 print("Restore failed")

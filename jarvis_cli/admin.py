@@ -3,13 +3,13 @@ from datetime import datetime
 from jarvis_cli import config, client
 
 
-def create_snapshot(environment):
+def create_snapshot(environment, config_map):
     snapshot_filepath = "jarvis_snapshot_{0}_{1}.tar.gz".format(environment,
             datetime.utcnow().strftime("%Y%m%d%H%M%S"))
-    snapshot_filepath =os.path.join(config.get_jarvis_snapshots_directory(environment),
+    snapshot_filepath =os.path.join(config.get_jarvis_snapshots_directory(config_map),
             snapshot_filepath)
 
-    data_dir = config.get_jarvis_data_directory(environment)
+    data_dir = config.get_jarvis_data_directory(config_map)
     data_top_dirname = os.path.dirname(data_dir)
     data_basename = os.path.basename(data_dir)
 
@@ -29,11 +29,11 @@ def create_snapshot(environment):
         print(cp.stdout)
 
 
-def restore_snapshot(environment, snapshot_filepath):
+def restore_snapshot(config_map, snapshot_filepath):
     if not os.path.isfile(snapshot_filepath):
         print("Snapshot file does not exist: {0}".format(snapshot_filepath))
 
-    data_dir = config.get_jarvis_data_directory(environment)
+    data_dir = config.get_jarvis_data_directory(config_map)
     data_top_dirname = os.path.dirname(data_dir)
 
     # Move current data directory to a temp
