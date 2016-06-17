@@ -26,3 +26,7 @@ def get_jarvis_data_directory(environment):
 def get_jarvis_snapshots_directory(environment):
     config = _get_config(environment)
     return config["snapshots_directory"]
+
+def get_author(environment):
+    config = _get_config(environment)
+    return config["author"]

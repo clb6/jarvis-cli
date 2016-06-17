@@ -280,7 +280,7 @@ if "__main__" == __name__:
             show_file_func(resource, resource_id)
             print("Created: {0}".format(resource_id))
 
-    AUTHOR = os.environ['JARVIS_AUTHOR']
+    AUTHOR = config.get_author(args.environment)
 
     def create_file_log():
         created = datetime.utcnow().replace(microsecond=0)
