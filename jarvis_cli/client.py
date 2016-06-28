@@ -99,8 +99,12 @@ def _post_jarvis_resource(endpoint, dbconn, resource_request, quiet=False,
     return _convert(_post_jarvis_resource_unconverted(endpoint, dbconn,
         resource_request, quiet, skip_tags_check))
 
-post_log_entry = partial(_post_jarvis_resource, 'logentries')
 post_tag = partial(_post_jarvis_resource, 'tags')
+
+def post_log_entry(event_id, conn, log_entry_request, quiet=False,
+        skip_tags_check=False):
+    return _post_jarvis_resource("events/{0}/logentries".format(event_id), conn,
+            log_entry_request, quiet, skip_tags_check)
 
 def post_event(dbconn, event_request, quiet=False):
     # FIXME: Events don't use skip_tags..

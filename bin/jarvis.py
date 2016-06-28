@@ -95,7 +95,11 @@ if "__main__" == __name__:
     parser_new = subparsers.add_parser('new', help='Create a new Jarvis resource')
     subparsers_new = parser_new.add_subparsers(help='Types of Jarvis resources',
             dest='resource_type')
+
     parser_new_log = subparsers_new.add_parser('log', help='Create a new log entry')
+    parser_new_log.add_argument('-e', '--event-id', nargs='?', required=True,
+            help='Associated event')
+
     parser_new_tag = subparsers_new.add_parser('tag', help='Create a new tag')
     parser_new_tag.add_argument('tag_name', help='Tag name')
     parser_new_event = subparsers_new.add_parser('event', help='Create a new event')
@@ -189,14 +193,14 @@ if "__main__" == __name__:
     # Modified not allowed for edits but want in reads. Split them up.
     metadata_keys_tag_show = ["name", "author", "created", "modified", "version",
             "tags"]
-    metadata_keys_log_show = ["id", "author", "created", "modified", "occurred",
-            "version", "tags", "parent", "event", "todo", "setting"]
+    metadata_keys_log_show = ["id", "author", "created", "modified", "version",
+            "tags", "parent", "event", "todo"]
     metadata_keys_event_show = ["eventId", "created", "occurred", "category",
             "source", "weight", "description"]
     metadata_keys_tag_edit = [field for field in metadata_keys_tag_show if field
             not in ["modified"]]
     metadata_keys_log_edit = [field for field in metadata_keys_log_show if field
-            not in ["modified"]]
+            not in ["event", "modified"]]
     metadata_keys_event_edit = [field for field in metadata_keys_event_show if field
             not in ["eventId", "created"]]
 
@@ -285,12 +289,11 @@ if "__main__" == __name__:
 
     AUTHOR = config.get_author(config_map)
 
-    def create_file_log():
+    def create_file_log(event_id):
         created = datetime.utcnow().replace(microsecond=0)
 
-        metadata = [ ("Author", AUTHOR), ("Occurred", created.isoformat()),
-                ("Tags", None), ("Parent", None), ("Event", None), ("Todo", None),
-                ("Setting", None) ]
+        metadata = [("Author", AUTHOR), ("Tags", None), ("Parent", None),
+                ("Todo", None)]
         metadata = [ "{0}: {1}".format(k, v if v else "")
                 for k, v in metadata ]
         stub_content = "\n".join(metadata)
@@ -302,7 +305,7 @@ if "__main__" == __name__:
 
         log_path = create_filepath("/tmp", log_id_temp)
 
-        create_file(partial(post_log_entry, DBCONN), show_file_log,
+        create_file(partial(post_log_entry, event_id, DBCONN), show_file_log,
                 "id", log_path, stub_content)
 
     def create_file_tag(tag_name):
@@ -320,7 +323,7 @@ if "__main__" == __name__:
     if args.action_name == 'new':
 
         if args.resource_type == 'log':
-            create_file_log()
+            create_file_log(args.event_id)
         elif args.resource_type == 'tag':
             print("Checking if tag already exists: {0}".format(args.tag_name))
 
