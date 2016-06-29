@@ -9,8 +9,9 @@ from tabulate import tabulate
 import dateparser
 import jarvis_cli as jc
 from jarvis_cli import config, client, admin
-from jarvis_cli.client import get_tag, get_log_entry, put_log_entry, \
-    put_tag, post_log_entry, post_tag, post_event, query, get_data_summary
+from jarvis_cli.client import get_tag, put_tag, post_tag, post_event, query, \
+        get_data_summary
+from jarvis_cli.client import log_entry as cle
 
 
 def convert_file_to_json(file_path):
@@ -111,6 +112,8 @@ if "__main__" == __name__:
 
     parser_edit_log = subparsers_edit.add_parser('log', help='Edit an existing log entry')
     parser_edit_log.add_argument('log_entry_name', help='Log name')
+    parser_edit_log.add_argument('-e', '--event-id', nargs='?', required=True,
+            help='Associated event')
 
     parser_edit_tag = subparsers_edit.add_parser('tag', help='Edit an existing tag element')
     parser_edit_tag.add_argument('tag_name', help='Tag name')
@@ -130,6 +133,8 @@ if "__main__" == __name__:
 
     parser_show_log = subparsers_show.add_parser('log', help='Open log entry in the browser')
     parser_show_log.add_argument('log_entry_name', help='Log name')
+    parser_show_log.add_argument('-e', '--event-id', nargs='?', required=True,
+            help='Associated event')
 
     parser_show_tag = subparsers_show.add_parser('tag', help='Open tag in the browser')
     parser_show_tag.add_argument('tag_name', help='Tag name')
@@ -305,7 +310,7 @@ if "__main__" == __name__:
 
         log_path = create_filepath("/tmp", log_id_temp)
 
-        create_file(partial(post_log_entry, event_id, DBCONN), show_file_log,
+        create_file(partial(cle.post_log_entry, event_id, DBCONN), show_file_log,
                 "id", log_path, stub_content)
 
     def create_file_tag(tag_name):
@@ -403,7 +408,11 @@ if "__main__" == __name__:
                 json_object.pop('version', None)
                 return json_object
 
-            edit_resource(client.get_log_entry, client.put_log_entry, edit_file_log,
+            # TODO: There must be a easier way to get event id.
+            get_func = partial(cle.get_log_entry, args.event_id)
+            put_func = partial(cle.put_log_entry, args.event_id)
+
+            edit_resource(get_func, put_func, edit_file_log,
                     show_file_log, post_edit_log, args.log_entry_name)
         elif args.resource_type == 'tag':
             def post_edit_tag(json_object):
@@ -433,7 +442,9 @@ if "__main__" == __name__:
         if args.resource_type == 'tag':
             get_and_show_resource(client.get_tag, show_file_tag, args.tag_name)
         elif args.resource_type == 'log':
-            get_and_show_resource(client.get_log_entry, show_file_log, args.log_entry_name)
+            # TODO: There must be a easier way to get event id.
+            get_func = partial(cle.get_log_entry, args.event_id)
+            get_and_show_resource(get_func, show_file_log, args.log_entry_name)
         elif args.resource_type == "event":
             get_and_show_resource(client.get_event, show_file_event, args.event_id)
 

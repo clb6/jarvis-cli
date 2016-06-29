@@ -47,7 +47,6 @@ def _get_jarvis_resource_unconverted(endpoint, dbconn, resource_id):
 def _get_jarvis_resource(endpoint, dbconn, resource_id):
     return _convert(_get_jarvis_resource_unconverted(endpoint, dbconn, resource_id))
 
-get_log_entry = partial(_get_jarvis_resource, 'logentries')
 get_tag = partial(_get_jarvis_resource, 'tags')
 get_event = partial(_get_jarvis_resource, 'events')
 
@@ -69,7 +68,6 @@ def _put_jarvis_resource(endpoint, dbconn, resource_id, resource_updated):
     return _convert(_put_jarvis_resource_unconverted(endpoint, dbconn, resource_id,
         resource_updated))
 
-put_log_entry = partial(_put_jarvis_resource, 'logentries')
 put_tag = partial(_put_jarvis_resource, 'tags')
 put_event = partial(_put_jarvis_resource, 'events')
 
@@ -100,11 +98,6 @@ def _post_jarvis_resource(endpoint, dbconn, resource_request, quiet=False,
         resource_request, quiet, skip_tags_check))
 
 post_tag = partial(_post_jarvis_resource, 'tags')
-
-def post_log_entry(event_id, conn, log_entry_request, quiet=False,
-        skip_tags_check=False):
-    return _post_jarvis_resource("events/{0}/logentries".format(event_id), conn,
-            log_entry_request, quiet, skip_tags_check)
 
 def post_event(dbconn, event_request, quiet=False):
     # FIXME: Events don't use skip_tags..
