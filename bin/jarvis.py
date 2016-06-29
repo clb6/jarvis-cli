@@ -460,7 +460,7 @@ if "__main__" == __name__:
             else:
                 print("No tags found")
         elif args.listing_type == 'logs':
-            logs = query("logentries", DBCONN, [("tags", args.tag),
+            logs = cle.query_log_entries(DBCONN, [("tags", args.tag),
                 ("searchterm", args.search_term)])
 
             if logs:
@@ -468,23 +468,39 @@ if "__main__" == __name__:
                     """
                     Form a summary representation of the log file.
                     """
-                    def iso_to_datetime(str_datetime):
-                        return datetime.strptime(str_datetime, '%Y-%m-%dT%H:%M:%S')
+                    try:
+                        event_id = log["event"]
+                        event = client.get_event(DBCONN, event_id)
+                    except Exception as e:
+                        import pprint
+                        pprint.pprint(log)
+                        raise e
 
-                    created = iso_to_datetime(log['created'])
-                    occurred = iso_to_datetime(log['occurred'])
+                    def format_ids():
+                        return "{0} -e {1}".format(log["id"], log["event"])
 
-                    delta = (created - occurred).total_seconds()
-                    dates = "Occurred: {0}, Created: {1}, Delta: {2}hrs" \
-                        .format(log['occurred'], log['created'], int(delta/3600))
+                    def format_timestamps():
+                        def iso_to_datetime(str_datetime):
+                            return dateparser.parse(str_datetime)
 
-                    if log['setting'] == "N/A":
-                        # Clip the body
-                        clip = log['body'].split('\n')[0][0:250]
-                    else:
-                        clip = log['setting']
-                    return "\n".join([str(log['id']), dates,
-                        ", ".join(log['tags']), clip])
+                        created = iso_to_datetime(log['created'])
+                        occurred = iso_to_datetime(event['occurred'])
+                        delta = (created - occurred).total_seconds()
+                        dates = { "created": log["created"],
+                                "occurred": event["occurred"],
+                                "delta": int(delta/3600) }
+
+                        return "Occurred: {0}, Created: {1}, Delta: {2}hrs" \
+                            .format(dates["occurred"], dates["created"], dates["delta"])
+
+                    def format_tags():
+                        return "Tags: {0}".format(", ".join(log["tags"]))
+
+                    def format_blurb():
+                        return log['body'].split('\n')[0][0:250]
+
+                    return "\n".join([func() for func in [format_ids, format_timestamps,
+                        format_tags, format_blurb]])
 
                 def parse(log):
                     if args.search_term:
