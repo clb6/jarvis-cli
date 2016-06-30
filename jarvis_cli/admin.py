@@ -1,6 +1,8 @@
 import subprocess, os, time, shutil
 from datetime import datetime
+import jarvis_cli as jc
 from jarvis_cli import config, client
+from jarvis_cli.client import log_entry as cle
 
 
 def create_snapshot(environment, config_map):
@@ -65,11 +67,11 @@ def _migrate_resources(resource_type, conn_prev, transform_func, post_to_new_fun
 
     print("Migrate #{0}: {1}".format(resource_type, len(to_migrate)))
 
-    def migrate_reverse_result(r_prev):
-        return None if post_to_new_func(r_prev) else r_prev
+    def migrate_reverse_result(r):
+        return None if post_to_new_func(r) else r
 
     start_time = time.time()
-    results = [ migrate_reverse_result(r_prev) for r_prev in to_migrate ]
+    results = [ migrate_reverse_result(r) for r in to_migrate ]
 
     num_attempted = len(to_migrate)
     num_succeeded = len(list(filter(lambda x: not x, results)))
@@ -77,10 +79,11 @@ def _migrate_resources(resource_type, conn_prev, transform_func, post_to_new_fun
         num_attempted, num_succeeded, time.time()-start_time))
 
 def migrate(resource_type, conn_prev, conn_next):
-    if "tag" in resource_type:
+    if "tags" in resource_type:
 
         def transform(tag):
             """Transform to tag request"""
+            del tag["modified"]
             del tag['version']
             return tag
 
@@ -90,19 +93,52 @@ def migrate(resource_type, conn_prev, conn_next):
         # came out. Originally thought tags could be migrated without it but then
         # realized that there are circular relationships
 
-        def post_to_new(tag_prev):
-            return client.post_tag(conn_next, tag_prev, skip_tags_check=True)
+        def post_to_new(tag_transformed):
+            return client.post_tag(conn_next, tag_transformed, skip_tags_check=True)
 
         _migrate_resources("tags", conn_prev, transform, post_to_new)
 
-    elif "log" in resource_type:
+    elif "logentries" in resource_type:
 
         def transform(log_entry):
-            """Transform to log entry request"""
-            del log_entry['version']
-            return log_entry
+            """Transform to log entry request and event request"""
+            event = None
 
-        def post_to_new(log_entry_prev):
-            return client.post_log_entry(conn_next, log_entry_prev)
+            if not log_entry["event"]:
+                event = { "created": log_entry["created"],
+                        "occurred": log_entry["occurred"],
+                        "category": "migrated",
+                        "source": jc.EVENT_SOURCE,
+                        "weight": 50,
+                        "description": log_entry["setting"] }
+
+            del log_entry["modified"]
+            del log_entry["version"]
+            del log_entry["occurred"]
+            del log_entry["setting"]
+
+            return (log_entry, event)
+
+        def post_to_new(decomposed_log_entry):
+            log_entry, event = decomposed_log_entry
+
+            event_id = log_entry["event"]
+            del log_entry["event"]
+
+            if event:
+                event_id = client.post_event(conn_next, event)["eventId"]
+
+            return cle.post_log_entry(event_id, conn_next, log_entry)
 
         _migrate_resources("logentries", conn_prev, transform, post_to_new)
+
+    elif "events" in resource_type:
+
+        def transform(event):
+            del event["location"]
+            return event
+
+        def post_to_new(event_transformed):
+            return client.post_event(conn_next, event_transformed)
+
+        _migrate_resources("events", conn_prev, transform, post_to_new)

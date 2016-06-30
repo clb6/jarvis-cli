@@ -13,3 +13,5 @@ EVENT_CATEGORIES_TO_DEFAULTS = {
         }
 
 EVENT_CATEGORIES = list(EVENT_CATEGORIES_TO_DEFAULTS.keys())
+
+EVENT_SOURCE = "jarvis-cli:{0}".format(__version__)

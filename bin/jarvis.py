@@ -179,6 +179,13 @@ if "__main__" == __name__:
     parser_admin_restore.add_argument('--snapshot-path', nargs='?', required=True,
             help='Path to snapshot used to restore')
 
+    parser_admin_migrate = subparsers_admin.add_parser('migrate',
+            help='Perform a data migration')
+    parser_admin_migrate.add_argument('--environment-source', nargs='?', required=True,
+            help='Jarvis environment name found in the cli_config.ini')
+    parser_admin_migrate.add_argument('--resource-type', nargs='?', required=True,
+            choices=["tags", "logentries", "events"], help='Jarvis resource type to migrate')
+
     args = parser.parse_args()
 
     # NOTE: Argparse should filter and validate and ensure that only the known
@@ -366,7 +373,7 @@ if "__main__" == __name__:
                 description = f.read()
 
             request = { "occurred": occurred.isoformat(), "category": category,
-                    "source": "jarvis-cli:{0}".format(jc.__version__),
+                    "source": jc.EVENT_SOURCE,
                     "weight": weight, "description": description }
             response = post_event(DBCONN, request)
 
@@ -580,3 +587,8 @@ if "__main__" == __name__:
                 print("Restore successful")
             else:
                 print("Restore failed")
+        elif args.admin_type == "migrate":
+            config_map_prev = config.get_config_map(args.environment_source,
+                    args.config_path)
+            conn_prev = config.get_client_connection(config_map_prev)
+            admin.migrate(args.resource_type, conn_prev, DBCONN)
