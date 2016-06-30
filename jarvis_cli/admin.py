@@ -78,9 +78,8 @@ def _migrate_resources(resource_type, conn_prev, transform_func, post_to_new_fun
     print("#attempted: {0}, #succeeded: {1}, elapsed: {2}s".format(
         num_attempted, num_succeeded, time.time()-start_time))
 
-def migrate(resource_type, conn_prev, conn_next):
-    if "tags" in resource_type:
-
+def migrate(conn_prev, conn_next):
+    def migrate_tags():
         def transform(tag):
             """Transform to tag request"""
             del tag["modified"]
@@ -98,8 +97,7 @@ def migrate(resource_type, conn_prev, conn_next):
 
         _migrate_resources("tags", conn_prev, transform, post_to_new)
 
-    elif "logentries" in resource_type:
-
+    def migrate_log_entries():
         def transform(log_entry):
             """Transform to log entry request and event request"""
             event = None
@@ -132,8 +130,7 @@ def migrate(resource_type, conn_prev, conn_next):
 
         _migrate_resources("logentries", conn_prev, transform, post_to_new)
 
-    elif "events" in resource_type:
-
+    def migrate_events():
         def transform(event):
             del event["location"]
             return event
@@ -142,3 +139,8 @@ def migrate(resource_type, conn_prev, conn_next):
             return client.post_event(conn_next, event_transformed)
 
         _migrate_resources("events", conn_prev, transform, post_to_new)
+
+    # Order matters in the migration
+    migrate_tags()
+    migrate_events()
+    migrate_log_entries()

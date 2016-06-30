@@ -181,10 +181,8 @@ if "__main__" == __name__:
 
     parser_admin_migrate = subparsers_admin.add_parser('migrate',
             help='Perform a data migration')
-    parser_admin_migrate.add_argument('--environment-source', nargs='?', required=True,
-            help='Jarvis environment name found in the cli_config.ini')
-    parser_admin_migrate.add_argument('--resource-type', nargs='?', required=True,
-            choices=["tags", "logentries", "events"], help='Jarvis resource type to migrate')
+    parser_admin_migrate.add_argument('-s', '--environment-source', nargs='?',
+            required=True, help='Jarvis environment name found in the cli_config.ini')
 
     args = parser.parse_args()
 
@@ -591,4 +589,4 @@ if "__main__" == __name__:
             config_map_prev = config.get_config_map(args.environment_source,
                     args.config_path)
             conn_prev = config.get_client_connection(config_map_prev)
-            admin.migrate(args.resource_type, conn_prev, DBCONN)
+            admin.migrate(conn_prev, DBCONN)
