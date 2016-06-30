@@ -6,7 +6,7 @@ setup(
         version = __version__,
         packages = find_packages(),
         author = "Michael Hwang",
-        author_email = "hirehwnag@gmail.com",
+        author_email = "hirehwang@gmail.com",
         description = ("Jarvis command-line tool"),
         scripts=['bin/jarvis.py'],
         install_requires=['requests', 'tabulate', 'dateparser<1.0.0'],
