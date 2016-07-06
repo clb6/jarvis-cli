@@ -15,6 +15,6 @@ setup(
         [console_scripts]
         jarvis=jarvis_cli.commands:cli
         """,
-        install_requires=['requests', 'tabulate', 'dateparser<1.0.0'],
+        install_requires=['requests', 'tabulate', 'dateparser<1.0.0', 'click<7.0'],
         zip_safe = False
         )
