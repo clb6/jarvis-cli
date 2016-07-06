@@ -12,14 +12,14 @@ def do_action_new():
     """Create a new Jarvis resource"""
     pass
 
-@click.command(name="log")
+@do_action_new.command(name="log")
 @click.option('-e', '--event-id', prompt=True, help="Associated event")
 @click.pass_context
 def create_log_entry(ctx, event_id):
     """Create a new log entry"""
     fh.create_file_log(ctx.obj["connection"], event_id)
 
-@click.command(name="tag")
+@do_action_new.command(name="tag")
 @click.argument('tag-name')
 @click.pass_context
 def create_tag(ctx, tag_name):
@@ -33,7 +33,7 @@ def create_tag(ctx, tag_name):
     else:
         fh.create_file_tag(conn, tag_name)
 
-@click.command(name="event")
+@do_action_new.command(name="event")
 @click.pass_context
 def create_event(ctx):
     """Create a new event"""
@@ -70,8 +70,3 @@ def create_event(ctx):
 
     if response:
         print("Created: {0}".format(response.get("eventId")))
-
-do_action_new.add_command(create_log_entry)
-do_action_new.add_command(create_tag)
-do_action_new.add_command(create_event)
-

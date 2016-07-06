@@ -27,7 +27,7 @@ def _edit_resource(conn, get_func, put_func, edit_file_func, show_file_func,
                 show_file_func(resource, resource_id)
                 print("Editted: {0}".format(resource_id))
 
-@click.command(name="log")
+@do_action_edit.command(name="log")
 @click.argument('log-entry-id')
 @click.option('-e', '--event-id', prompt=True, help="Associated event")
 @click.pass_context
@@ -54,7 +54,7 @@ def edit_log_entry(ctx, log_entry_id, event_id):
     _edit_resource(conn, get_func, put_func, fh.edit_file_log,
             fh.show_file_log, post_edit_log, log_entry_id)
 
-@click.command(name="tag")
+@do_action_edit.command(name="tag")
 @click.argument('tag-name')
 @click.pass_context
 def edit_tag(ctx, tag_name):
@@ -73,7 +73,7 @@ def edit_tag(ctx, tag_name):
     _edit_resource(conn, client.get_tag, client.put_tag, fh.edit_file_tag,
             fh.show_file_tag, post_edit_tag, tag_name)
 
-@click.command(name="event")
+@do_action_edit.command(name="event")
 @click.argument('event-id')
 @click.pass_context
 def edit_event(ctx, event_id):
@@ -85,8 +85,3 @@ def edit_event(ctx, event_id):
     conn = ctx.obj["connection"]
     _edit_resource(conn, client.get_event, client.put_event, fh.edit_file_event,
             fh.show_file_event, post_edit_event, event_id)
-
-
-do_action_edit.add_command(edit_log_entry)
-do_action_edit.add_command(edit_tag)
-do_action_edit.add_command(edit_event)

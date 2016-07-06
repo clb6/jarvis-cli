@@ -7,7 +7,7 @@ def do_action_admin():
     """Perform administrative operations"""
     pass
 
-@click.command(name="status")
+@do_action_admin.command(name="status")
 @click.pass_context
 def show_status(ctx):
     """Show the Jarvis data api status"""
@@ -17,7 +17,7 @@ def show_status(ctx):
             for rt in ["tags", "logentries", "events"] ]
     print(tabulate(summaries, columns, tablefmt="simple"))
 
-@click.command(name="backup")
+@do_action_admin.command(name="backup")
 @click.pass_context
 def backup(ctx):
     """Create a new snapshot"""
@@ -30,7 +30,7 @@ def backup(ctx):
     else:
         print("Backing up failed")
 
-@click.command(name="restore")
+@do_action_admin.command(name="restore")
 @click.option('--snapshot-path', required=True, help='Path to snapshot used to restore')
 @click.pass_context
 def restore(ctx, snapshot_path):
@@ -41,7 +41,7 @@ def restore(ctx, snapshot_path):
     else:
         print("Restore failed")
 
-@click.command(name="migrate")
+@do_action_admin.command(name="migrate")
 @click.option('-s', '--environment-source', required=True,
         help='Jarvis environment name found in the cli_config.ini')
 @click.pass_context
@@ -52,9 +52,3 @@ def migrate(ctx, environment_source):
     config_map_prev = config.get_config_map(environment_source, config_path)
     conn_prev = config.get_client_connection(config_map_prev)
     admin.migrate(conn_prev, conn)
-
-
-do_action_admin.add_command(show_status)
-do_action_admin.add_command(backup)
-do_action_admin.add_command(restore)
-do_action_admin.add_command(migrate)

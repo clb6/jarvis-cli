@@ -76,7 +76,7 @@ def format_log_entry(conn, log_entry, search_term=None):
     else:
         return _create_summary_of_log_entry(conn, log_entry)
 
-@click.command(name="logs")
+@do_action_list.command(name="logs")
 @click.option('-t', '--tag-name', help='Search by tag name')
 @click.option('-s', '--search-term', help='Search term')
 @click.pass_context
@@ -94,7 +94,7 @@ def list_log_entries(ctx, tag_name, search_term):
     else:
         print("No log entries found")
 
-@click.command(name="tags")
+@do_action_list.command(name="tags")
 @click.option('-t', '--tag-name', help='Search by tag name')
 @click.option('-a', '--associated-tag-names', help='Search by associated tags')
 @click.pass_context
@@ -110,7 +110,7 @@ def list_tags(ctx, tag_name, associated_tag_names):
     else:
         print("No tags found")
 
-@click.command(name="events")
+@do_action_list.command(name="events")
 @click.option('-c', '--category', type=click.Choice(jc.EVENT_CATEGORIES), help='Event category')
 @click.option('-w', '--weight', type=int, help='Event weight lower bound')
 @click.pass_context
@@ -138,8 +138,3 @@ def list_events(ctx, category, weight):
         print(tabulate(events, fields, tablefmt="simple"))
     else:
         print("No events found")
-
-
-do_action_list.add_command(list_log_entries)
-do_action_list.add_command(list_tags)
-do_action_list.add_command(list_events)
