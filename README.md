@@ -11,7 +11,6 @@ Jarvis requires the following environmental variables to be configured:
 Variable Name | Description
 ------------- | -----------
 EDITOR | The editor application name
-JARVIS_AUTHOR | The author of the content
 
 ### Configuration File
 
@@ -22,6 +21,16 @@ A configuration file is required in the following directory path: `$HOME/.jarvis
 host = localhost
 port = 3000
 ```
+
+Configuration parameters include:
+
+Parameter Name | Description
+-------------- | -----------
+author | Authors name used on log entries
+host | Hostname of Jarvis-api to use
+port | Port of Jarvis-api to use
+data_directory | Data directory for the Jarvis-api - used for backing up
+snapshots_directory | Snapshots directory where backups are stored
 
 ### Viewing Markdown
 
