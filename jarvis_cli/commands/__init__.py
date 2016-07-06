@@ -8,6 +8,8 @@ from jarvis_cli.commands import action_new, action_edit, action_show, action_lis
         help="Path to Jarvis cli configuration file")
 @click.option('--config-path', default=config.JARVIS_CLI_CONFIG_PATH,
             help="Path to Jarvis cli configuration file")
+# This is sweet
+@click.version_option()
 @click.pass_context
 def cli(ctx, environment, config_path):
     config_map = config.get_config_map(environment, config_path)
