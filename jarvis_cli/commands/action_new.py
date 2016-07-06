@@ -17,7 +17,8 @@ def do_action_new():
 @click.pass_context
 def create_log_entry(ctx, event_id):
     """Create a new log entry"""
-    fh.create_file_log(ctx.obj["connection"], event_id)
+    author = config.get_author(ctx.obj["config_map"])
+    fh.create_file_log(ctx.obj["connection"], author, event_id)
 
 @do_action_new.command(name="tag")
 @click.argument('tag-name')
@@ -31,7 +32,8 @@ def create_tag(ctx, tag_name):
     if client.get_tag(conn, tag_name.lower()):
         print("Tag already exists: {0}".format(tag_name))
     else:
-        fh.create_file_tag(conn, tag_name)
+        author = config.get_author(ctx.obj["config_map"])
+        fh.create_file_tag(conn, author, tag_name)
 
 @do_action_new.command(name="event")
 @click.pass_context

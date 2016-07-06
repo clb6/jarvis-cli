@@ -1,6 +1,6 @@
 from functools import partial
 import click
-from jarvis_cli import client
+from jarvis_cli import client, config
 from jarvis_cli import file_helper as fh
 from jarvis_cli.client import log_entry as cle
 
@@ -33,13 +33,14 @@ def _edit_resource(conn, get_func, put_func, edit_file_func, show_file_func,
 @click.pass_context
 def edit_log_entry(ctx, log_entry_id, event_id):
     """Edit an existing log entry"""
+    author = config.get_author(ctx.obj["config_map"])
     conn = ctx.obj["connection"]
 
     def post_edit_log(json_object):
         # WATCH! This specialty code here because the LogEntry.id
         # is a number.
         json_object["id"] = int(json_object["id"])
-        fh.check_and_create_missing_tags(conn, json_object)
+        fh.check_and_create_missing_tags(conn, author, json_object)
 
         # Change from log entry to log entry request
         json_object.pop('created', None)
@@ -59,10 +60,11 @@ def edit_log_entry(ctx, log_entry_id, event_id):
 @click.pass_context
 def edit_tag(ctx, tag_name):
     """Edit an existing tag"""
+    author = config.get_author(ctx.obj["config_map"])
     conn = ctx.obj["connection"]
 
     def post_edit_tag(json_object):
-        fh.check_and_create_missing_tags(conn, json_object)
+        fh.check_and_create_missing_tags(conn, author, json_object)
 
         # Change from tag to tag request
         json_object.pop("created", None)

@@ -148,25 +148,25 @@ show_file_tag = partial(show_file, metadata_keys_tag_show)
 show_file_log = partial(show_file, metadata_keys_log_show)
 show_file_event = partial(show_file, metadata_keys_event_show)
 
-def check_and_create_missing_tags(conn, resource_request):
+def check_and_create_missing_tags(conn, author, resource_request):
     for tag_name in resource_request['tags']:
         print("Checking if tag already exists: {0}".format(tag_name))
         if not client.get_tag(conn, tag_name.lower()):
             try:
-                create_file_tag(conn, tag_name)
+                create_file_tag(conn, author, tag_name)
             except Exception as e:
                 # TODO: Need to handle case when not all the tags gets created.
                 print("Unexpected error creating tag: {0}, {1}".format(
                     tag_name, e))
 
-def create_file(conn, post_func, show_file_func, resource_id_key, local_path,
-        stub_content):
+def _create_file(conn, post_func, show_file_func, resource_id_key, local_path,
+        author, stub_content):
     with open(local_path, 'w') as f:
         f.write(stub_content)
 
     open_file_in_editor(local_path)
     resource_request = convert_file_to_json(local_path)
-    check_and_create_missing_tags(conn, resource_request)
+    check_and_create_missing_tags(conn, author, resource_request)
     resource = post_func(resource_request)
 
     if resource:
@@ -176,10 +176,10 @@ def create_file(conn, post_func, show_file_func, resource_id_key, local_path,
 
 AUTHOR = "MUST FIX"
 
-def create_file_log(conn, event_id):
+def create_file_log(conn, author, event_id):
     created = datetime.utcnow().replace(microsecond=0)
 
-    metadata = [("Author", AUTHOR), ("Tags", None), ("Parent", None),
+    metadata = [("Author", author), ("Tags", None), ("Parent", None),
             ("Todo", None)]
     metadata = [ "{0}: {1}".format(k, v if v else "")
             for k, v in metadata ]
@@ -192,15 +192,15 @@ def create_file_log(conn, event_id):
 
     log_path = create_filepath("/tmp", log_id_temp)
 
-    create_file(conn, partial(cle.post_log_entry, event_id, conn), show_file_log,
-            "id", log_path, stub_content)
+    _create_file(conn, partial(cle.post_log_entry, event_id, conn), show_file_log,
+            "id", log_path, author, stub_content)
 
-def create_file_tag(conn, tag_name):
-    metadata = [ "Name: {0}".format(tag_name), "Author: {0}".format(AUTHOR),
+def create_file_tag(conn, author, tag_name):
+    metadata = [ "Name: {0}".format(tag_name), "Author: {0}".format(author),
             "Tags: " ]
 
     stub_content = "\n\n".join(["\n".join(metadata), "# {0}\n".format(tag_name)])
     tag_path = create_filepath("/tmp", tag_name)
 
-    create_file(conn, partial(client.post_tag, conn), show_file_tag,
-            "name", tag_path, stub_content)
+    _create_file(conn, partial(client.post_tag, conn), show_file_tag, "name",
+            tag_path, author, stub_content)
