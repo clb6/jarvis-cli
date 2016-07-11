@@ -66,9 +66,41 @@ def create_event(ctx):
         description = f.read()
 
     request = { "occurred": occurred.isoformat(), "category": category,
-            "source": jc.EVENT_SOURCE,
-            "weight": weight, "description": description }
-    response = client.post_event(ctx.obj["connection"], request)
+            "source": jc.EVENT_SOURCE, "weight": weight, "description": description,
+            "artifacts": [] }
 
-    if response:
-        print("Created: {0}".format(response.get("eventId")))
+    # Add artifacts
+    while True:
+        should_add = input("\nAdd an event artifact? [Y/N]: ")
+
+        if should_add == "Y":
+            count = len(request["artifacts"])+1
+
+            def get_parameter(param):
+                return input("[Artifact #{0}] {1}: ".format(count, param))
+
+            params = dict([(param.lower(), get_parameter(param))
+                for param in ["Name", "URL", "Source", "Filetype"]])
+
+            rel = "{0}-{1}".format(params["source"], params["filetype"])
+            request["artifacts"].append({ "title": params["name"], "rel": rel,
+                "href": params["url"] })
+        elif should_add == "N":
+            break
+
+    print("\n")
+    import pprint
+    pprint.pprint(request)
+
+    while True:
+        should_publish = input("Publish? [Y/N]: ")
+
+        if should_publish == "Y":
+            response = client.post_event(ctx.obj["connection"], request)
+
+            if response:
+                print("Created: {0}".format(response.get("eventId")))
+            break
+        elif should_publish == "N":
+            print("Canceled event publish")
+            break
