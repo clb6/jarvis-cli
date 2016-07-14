@@ -48,7 +48,8 @@ def _get_jarvis_resource(endpoint, dbconn, resource_id):
     return _convert(_get_jarvis_resource_unconverted(endpoint, dbconn, resource_id))
 
 get_tag = partial(_get_jarvis_resource, 'tags')
-get_event = partial(_get_jarvis_resource, 'events')
+# WATCH! Events are unconverted.
+get_event = partial(_get_jarvis_resource_unconverted, 'events')
 
 
 def _put_jarvis_resource_unconverted(endpoint, dbconn, resource_id, resource_updated):

@@ -82,14 +82,10 @@ metadata_keys_tag_show = ["name", "author", "created", "modified", "version",
         "tags"]
 metadata_keys_log_show = ["id", "author", "created", "modified", "version",
         "tags", "parent", "event", "todo"]
-metadata_keys_event_show = ["eventId", "created", "occurred", "category",
-        "source", "weight", "description"]
 metadata_keys_tag_edit = [field for field in metadata_keys_tag_show if field
         not in ["modified"]]
 metadata_keys_log_edit = [field for field in metadata_keys_log_show if field
         not in ["event", "modified"]]
-metadata_keys_event_edit = [field for field in metadata_keys_event_show if field
-        not in ["eventId", "created"]]
 
 def handle_jarvis_resource(metadata_keys, json_object, resource_id):
     if not json_object:
@@ -133,20 +129,20 @@ def edit_file(metadata_keys, json_object, resource_id):
 
 edit_file_tag = partial(edit_file, metadata_keys_tag_edit)
 edit_file_log = partial(edit_file, metadata_keys_log_edit)
-edit_file_event = partial(edit_file, metadata_keys_event_edit)
 
-def show_file(metadata_keys, json_object, resource_id):
-    temp = handle_jarvis_resource(metadata_keys, json_object, resource_id)
-
-    if temp:
+def just_show_file(file_path):
+    if file_path:
         # Previews the markdown. This will require you to change the
         # mimeapps.list setting file in order to chose your markdown preview
         # tool.
-        webbrowser.open("file://{0}".format(temp))
+        webbrowser.open("file://{0}".format(file_path))
+
+def show_file(metadata_keys, json_object, resource_id):
+    temp = handle_jarvis_resource(metadata_keys, json_object, resource_id)
+    just_show_file(temp)
 
 show_file_tag = partial(show_file, metadata_keys_tag_show)
 show_file_log = partial(show_file, metadata_keys_log_show)
-show_file_event = partial(show_file, metadata_keys_event_show)
 
 def check_and_create_missing_tags(conn, author, resource_request):
     for tag_name in resource_request['tags']:

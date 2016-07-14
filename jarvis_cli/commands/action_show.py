@@ -1,4 +1,5 @@
 from functools import partial
+import pprint
 import click
 from jarvis_cli import file_helper as fh
 from jarvis_cli import client
@@ -38,4 +39,26 @@ def show_tag(ctx, tag_name):
 def show_event(ctx, event_id):
     """Display an event"""
     conn = ctx.obj["connection"]
-    _get_and_show_resource(conn, client.get_event, fh.show_file_event, event_id)
+    event = client.get_event(conn, event_id)
+
+    def format_event(event):
+        import copy
+        fevent = copy.deepcopy(event)
+        description = fevent["description"]
+        MAX_LENGTH = 80
+        fevent["description"] = "{0}..".format(description[:MAX_LENGTH]) \
+                if len(description) > MAX_LENGTH else description
+        return fevent
+
+    pprint.pprint(format_event(event), width=120)
+    print("\n")
+
+    section = input("Show more [description]?: ")
+
+    if section == "description":
+        tmpfile = fh.create_filepath("/tmp", "jarvis_event_description_{0}".format(event_id))
+
+        with open(tmpfile, 'w') as f:
+            f.write(event[section])
+
+        fh.just_show_file(tmpfile)
