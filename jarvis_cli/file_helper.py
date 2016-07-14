@@ -66,6 +66,9 @@ def create_filepath(file_dir, file_name):
     file_name = file_name if ".md" in file_name else "{0}.md".format(file_name)
     return os.path.join(file_dir, file_name)
 
+def create_event_description_path(some_key):
+    return create_filepath("/tmp", "jarvis_event_description_{0}".format(some_key))
+
 def generate_id(some_datetime):
     # WATCH! datetime.fromtimestamp(0) is not Unix epoch and returns
     # 1969-12-31 19:00 instead.

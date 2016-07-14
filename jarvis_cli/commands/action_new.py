@@ -5,7 +5,7 @@ import click
 import dateparser
 import validators
 import jarvis_cli as jc
-from jarvis_cli import config, client
+from jarvis_cli import config, client, formatting
 import jarvis_cli.file_helper as fh
 
 
@@ -69,8 +69,7 @@ def create_event(ctx):
     print("Describe the event. Opening text editor.")
     time.sleep(1)
 
-    filepath = fh.create_filepath("/tmp",
-            "jarvis_event_{0}".format(fh.generate_id(occurred)))
+    filepath = fh.create_event_description_path(fh.generate_id(occurred))
     fh.open_file_in_editor(filepath)
 
     with open(filepath, 'r') as f:
@@ -113,7 +112,7 @@ def create_event(ctx):
             print("\n")
             break
 
-    pprint.pprint(request)
+    pprint.pprint(formatting.format_event_request(request), width=120)
 
     while True:
         should_publish = input("Publish? [Y/N]: ")
