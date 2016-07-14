@@ -3,6 +3,7 @@ import time, pprint
 import click
 # REVIEW: dateparser vs dateutil
 import dateparser
+import validators
 import jarvis_cli as jc
 from jarvis_cli import config, client
 import jarvis_cli.file_helper as fh
@@ -87,11 +88,18 @@ def create_event(ctx):
         if should_add == "Y":
             count = len(request["artifacts"])+1
 
-            def get_parameter(param):
-                return input("[Artifact #{0}] {1}: ".format(count, param))
+            def get_parameter(param, validator_func):
+                while True:
+                    result = input("[Artifact #{0}] {1}: ".format(count, param))
 
-            params = dict([(param.lower(), get_parameter(param))
-                for param in ["Name", "URL", "Source", "Filetype"]])
+                    if validator_func and validator_func(result):
+                        return result
+                    elif not validator_func:
+                        return result
+
+            params = dict([(param.lower(), get_parameter(param, vfunc))
+                for param, vfunc in [("Name", None), ("URL", validators.url),
+                    ("Source", None), ("Filetype", None)]])
 
             rel = "{0}-{1}".format(params["source"], params["filetype"])
             artifact = { "title": params["name"], "rel": rel, "href": params["url"] }
