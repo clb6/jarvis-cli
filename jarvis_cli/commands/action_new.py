@@ -45,7 +45,7 @@ def create_event(ctx):
         print("> {0}\n".format(answer))
 
     occurred = dateparser.parse(input("When the event occurred [default: now]?: "))
-    occurred = occurred or datetime.utcnow()
+    occurred = occurred or datetime.utcnow().replace(microsecond=0)
     print_answer(occurred)
 
     while True:
