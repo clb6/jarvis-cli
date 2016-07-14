@@ -1,4 +1,5 @@
 from datetime import datetime
+import time, pprint
 import click
 # REVIEW: dateparser vs dateutil
 import dateparser
@@ -39,13 +40,18 @@ def create_tag(ctx, tag_name):
 @click.pass_context
 def create_event(ctx):
     """Create a new event"""
-    occurred = dateparser.parse(input("When occurred [default: now]?: "))
+    def print_answer(answer):
+        print("> {0}\n".format(answer))
+
+    occurred = dateparser.parse(input("When the event occurred [default: now]?: "))
     occurred = occurred or datetime.utcnow()
+    print_answer(occurred)
 
     while True:
         category = input("Event category [options: {0}]: ".format(jc.EVENT_CATEGORIES))
 
         if category in jc.EVENT_CATEGORIES:
+            print_answer(category)
             break
 
     while True:
@@ -54,9 +60,13 @@ def create_event(ctx):
 
         try:
             weight = int(weight)
+            print_answer(weight)
             break
         except:
             pass
+
+    print("Describe the event. Opening text editor.")
+    time.sleep(1)
 
     filepath = fh.create_filepath("/tmp",
             "jarvis_event_{0}".format(fh.generate_id(occurred)))
@@ -64,6 +74,7 @@ def create_event(ctx):
 
     with open(filepath, 'r') as f:
         description = f.read()
+        print_answer(description)
 
     request = { "occurred": occurred.isoformat(), "category": category,
             "source": jc.EVENT_SOURCE, "weight": weight, "description": description,
@@ -71,7 +82,7 @@ def create_event(ctx):
 
     # Add artifacts
     while True:
-        should_add = input("\nAdd an event artifact? [Y/N]: ")
+        should_add = input("Add an event artifact? [Y/N]: ")
 
         if should_add == "Y":
             count = len(request["artifacts"])+1
@@ -83,13 +94,17 @@ def create_event(ctx):
                 for param in ["Name", "URL", "Source", "Filetype"]])
 
             rel = "{0}-{1}".format(params["source"], params["filetype"])
-            request["artifacts"].append({ "title": params["name"], "rel": rel,
-                "href": params["url"] })
+            artifact = { "title": params["name"], "rel": rel, "href": params["url"] }
+
+            request["artifacts"].append(artifact)
+
+            pprint.pprint(artifact)
+            print("\n")
+
         elif should_add == "N":
+            print("\n")
             break
 
-    print("\n")
-    import pprint
     pprint.pprint(request)
 
     while True:
@@ -99,7 +114,7 @@ def create_event(ctx):
             response = client.post_event(ctx.obj["connection"], request)
 
             if response:
-                print("Created: {0}".format(response.get("eventId")))
+                print("Created new event: {0}".format(response.get("eventId")))
             break
         elif should_publish == "N":
             print("Canceled event publish")
