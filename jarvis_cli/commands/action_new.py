@@ -1,12 +1,9 @@
-from datetime import datetime
-import time, pprint
+import pprint
 import click
-# REVIEW: dateparser vs dateutil
-import dateparser
-import validators
 import jarvis_cli as jc
 from jarvis_cli import config, client, formatting
 import jarvis_cli.file_helper as fh
+from jarvis_cli import interactive as jci
 
 
 @click.group(name="new")
@@ -41,76 +38,15 @@ def create_tag(ctx, tag_name):
 @click.pass_context
 def create_event(ctx):
     """Create a new event"""
-    def print_answer(answer):
-        print("> {0}\n".format(answer))
-
-    occurred = dateparser.parse(input("When the event occurred [default: now]?: "))
-    occurred = occurred or datetime.utcnow().replace(microsecond=0)
-    print_answer(occurred)
-
-    while True:
-        category = input("Event category [options: {0}]: ".format(jc.EVENT_CATEGORIES))
-
-        if category in jc.EVENT_CATEGORIES:
-            print_answer(category)
-            break
-
-    while True:
-        default = jc.EVENT_CATEGORIES_TO_DEFAULTS.get(category)
-        weight = input("Event weight [default: {0}]: ".format(default)) or default
-
-        try:
-            weight = int(weight)
-            print_answer(weight)
-            break
-        except:
-            pass
-
-    print("Describe the event. Opening text editor.")
-    time.sleep(1)
-
-    filepath = fh.create_event_description_path(fh.generate_id(occurred))
-    fh.open_file_in_editor(filepath)
-
-    with open(filepath, 'r') as f:
-        description = f.read()
-        print_answer(description)
+    occurred = jci.prompt_event_occurred()
+    category = jci.prompt_event_category()
+    weight = jci.prompt_event_weight(category)
+    description = jci.edit_event_description(occurred)
+    artifacts = jci.prompt_event_artifacts()
 
     request = { "occurred": occurred.isoformat(), "category": category,
             "source": jc.EVENT_SOURCE, "weight": weight, "description": description,
-            "artifacts": [] }
-
-    # Add artifacts
-    while True:
-        should_add = input("Add an event artifact? [Y/N]: ")
-
-        if should_add == "Y":
-            count = len(request["artifacts"])+1
-
-            def get_parameter(param, validator_func):
-                while True:
-                    result = input("[Artifact #{0}] {1}: ".format(count, param))
-
-                    if validator_func and validator_func(result):
-                        return result
-                    elif not validator_func:
-                        return result
-
-            params = dict([(param.lower(), get_parameter(param, vfunc))
-                for param, vfunc in [("Name", None), ("URL", validators.url),
-                    ("Source", None), ("Filetype", None)]])
-
-            rel = "{0}-{1}".format(params["source"], params["filetype"])
-            artifact = { "title": params["name"], "rel": rel, "href": params["url"] }
-
-            request["artifacts"].append(artifact)
-
-            pprint.pprint(artifact)
-            print("\n")
-
-        elif should_add == "N":
-            print("\n")
-            break
+            "artifacts": artifacts }
 
     pprint.pprint(formatting.format_event_request(request), width=120)
 

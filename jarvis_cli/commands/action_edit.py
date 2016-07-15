@@ -1,7 +1,10 @@
 from functools import partial
+import pprint
 import click
-from jarvis_cli import client, config
+import jarvis_cli as jc
+from jarvis_cli import client, config, formatting
 from jarvis_cli import file_helper as fh
+from jarvis_cli import interactive as jci
 from jarvis_cli.client import log_entry as cle
 
 
@@ -80,10 +83,32 @@ def edit_tag(ctx, tag_name):
 @click.pass_context
 def edit_event(ctx, event_id):
     """Edit an existing event"""
-    def post_edit_event(json_object):
-        json_object["weight"] = int(json_object["weight"])
-        return json_object
-
     conn = ctx.obj["connection"]
-    _edit_resource(conn, client.get_event, client.put_event, fh.edit_file_event,
-            fh.show_file_event, post_edit_event, event_id)
+
+    event = client.get_event(conn, event_id)
+
+    occurred = jci.prompt_event_occurred(event["occurred"])
+    category = jci.prompt_event_category(event["category"])
+    weight = jci.prompt_event_weight(category, event["weight"])
+    description = jci.edit_event_description(occurred, event["description"])
+    artifacts = jci.prompt_event_artifacts(event["artifactLinks"])
+
+    # TODO: DRY request creation with action_new.event
+    request = { "occurred": occurred.isoformat(), "category": category,
+            "source": jc.EVENT_SOURCE, "weight": weight, "description": description,
+            "artifacts": artifacts }
+
+    pprint.pprint(formatting.format_event_request(request), width=120)
+
+    while True:
+        should_publish = input("Publish update? [Y/N]: ")
+
+        if should_publish == "Y":
+            response = client.put_event(conn, event_id, request)
+
+            if response:
+                print("Updated event: {0}".format(response.get("eventId")))
+            break
+        elif should_publish == "N":
+            print("Canceled event update")
+            break
