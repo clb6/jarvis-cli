@@ -28,7 +28,14 @@ def _create_summary_of_log_entry(conn, log_entry):
 
     def format_timestamps():
         def iso_to_datetime(str_datetime):
-            return dateparser.parse(str_datetime)
+            # dateparser cannot handle microseconds apparently
+            dt = dateparser.parse(str_datetime)
+            if dt:
+                return dt
+            elif "." in str_datetime:
+                stripped_ms = str_datetime[:str_datetime.index(".")]
+                return iso_to_datetime(stripped_ms)
+
 
         created = iso_to_datetime(log_entry['created'])
         occurred = iso_to_datetime(event['occurred'])
