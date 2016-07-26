@@ -4,7 +4,7 @@ import dateparser
 from tabulate import tabulate
 import jarvis_cli as jc
 from jarvis_cli import client
-from jarvis_cli.client import log_entry as cle
+
 
 @click.group(name="list")
 def do_action_list():
@@ -90,7 +90,7 @@ def format_log_entry(conn, log_entry, search_term=None):
 def list_log_entries(ctx, tag_name, search_term):
     """Query and list log entries"""
     conn = ctx.obj["connection"]
-    logs = cle.query_log_entries(conn, [("tags", tag_name),
+    logs = client.query_log_entries(conn, [("tags", tag_name),
         ("searchterm", search_term)])
 
     if logs:
