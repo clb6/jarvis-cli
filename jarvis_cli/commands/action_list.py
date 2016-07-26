@@ -123,7 +123,6 @@ def list_tags(ctx, tag_name, associated_tag_names):
 @click.pass_context
 def list_events(ctx, category, weight):
     """Query and list events"""
-    # TODO: Show table view vs list view
     query_params = [('category', category), ('weight', weight)]
     query_params = [ qp for qp in query_params if qp[1] != None ]
 
@@ -135,13 +134,12 @@ def list_events(ctx, category, weight):
             """Slice an iterator of events by `step_size`, display the events
             indexed, and return the slice as a list"""
             fields = ['index', 'category', 'occurred', 'weight', 'description',
-                    '#logs', '#artifacts', 'eventId']
+                    '#logs', '#artifacts']
 
             def format_event(e):
                 return [ e['category'], e['occurred'], e['weight'],
                         formatting.truncate_long_text(e['description'], 40),
-                        len(e['logEntrys']), len(e['artifacts']),
-                        e['eventId'] ]
+                        len(e['logEntrys']), len(e['artifacts']) ]
 
             def chain_each_event(it):
                 """Takes [[1], ["abc", "xyz"]] and produces [1, "abc", "xyz"]"""
@@ -162,20 +160,30 @@ def list_events(ctx, category, weight):
 
         while True:
             if events_sliced:
-                operation = input("What's next? {more/show/log/done}: ")
+                command = input("What's next? {more/show/log/done}: ")
 
-                if operation == "more":
+                if command == "more":
                     events_sliced = slice_and_display_ievents(ievents)
-                elif operation == "show":
+                elif "show" in command:
                     # Show an event in greater detail
-                    index = int(input("Which event? Give an index: "))
+                    def determine_index(command):
+                        command = command.split(" ")
+
+                        if len(command) > 1:
+                            try:
+                                return int(command[1])
+                            except:
+                                pass
+                        return int(input("Show which event? Give an index: "))
+
+                    index = determine_index(command)
                     pprint.pprint(formatting.format_event(events_sliced[index]),
                             width=120)
-                elif operation == "log":
+                elif command == "log":
                     # Create log
                     # TODO
                     pass
-                elif operation == "done":
+                elif command == "done":
                     break
             else:
                 break
