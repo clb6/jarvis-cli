@@ -1,5 +1,5 @@
 import re, pprint
-from itertools import islice
+from itertools import islice, chain
 import click
 import dateparser
 from tabulate import tabulate
@@ -131,18 +131,29 @@ def list_events(ctx, category, weight):
     events = client.query('events', conn, query_params)
 
     if events:
-        fields = ['category', 'occurred', 'weight', 'description',
-                '#logs', '#artifacts', 'eventId']
-
-        def format_event(e):
-            return [ e['category'], e['occurred'], e['weight'],
-                    formatting.truncate_long_text(e['description'], 40),
-                    len(e['logEntrys']), len(e['artifacts']),
-                    e['eventId'] ]
-
         def slice_and_display_ievents(ievents, step_size=25):
+            """Slice an iterator of events by `step_size`, display the events
+            indexed, and return the slice as a list"""
+            fields = ['index', 'category', 'occurred', 'weight', 'description',
+                    '#logs', '#artifacts', 'eventId']
+
+            def format_event(e):
+                return [ e['category'], e['occurred'], e['weight'],
+                        formatting.truncate_long_text(e['description'], 40),
+                        len(e['logEntrys']), len(e['artifacts']),
+                        e['eventId'] ]
+
+            def chain_each_event(it):
+                """Takes [[1], ["abc", "xyz"]] and produces [1, "abc", "xyz"]"""
+                return list(chain.from_iterable(it))
+
             events_sliced = list(islice(ievents, step_size))
+
+            # Create indexed list of formatted event records
             events_print = [ format_event(e) for e in events_sliced ]
+            indices = [ [i] for i in range(0, step_size) ]
+            events_print = list(map(chain_each_event, zip(indices, events_print)))
+
             print(tabulate(events_print, fields, tablefmt="simple"))
             return events_sliced
 
@@ -156,8 +167,8 @@ def list_events(ctx, category, weight):
                 if operation == "more":
                     events_sliced = slice_and_display_ievents(ievents)
                 elif operation == "show":
-                    # Show event in more details
-                    index = int(input("Which?: "))
+                    # Show an event in greater detail
+                    index = int(input("Which event? Give an index: "))
                     pprint.pprint(formatting.format_event(events_sliced[index]),
                             width=120)
                 elif operation == "log":
