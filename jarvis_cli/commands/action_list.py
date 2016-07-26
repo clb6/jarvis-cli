@@ -3,7 +3,7 @@ import click
 import dateparser
 from tabulate import tabulate
 import jarvis_cli as jc
-from jarvis_cli import client
+from jarvis_cli import client, formatting
 
 
 @click.group(name="list")
@@ -131,17 +131,16 @@ def list_events(ctx, category, weight):
     events = client.query('events', conn, query_params)
 
     if events:
-        fields = ['category', 'occurred', 'weight', 'description', 'eventId']
+        fields = ['category', 'occurred', 'weight', 'description',
+                '#logs', '#artifacts', 'eventId']
 
-        def show_event(e):
-            def truncate_string(e):
-                cutoff = 40
-                return e[:cutoff] if isinstance(e, str) and len(e) > cutoff \
-                    else e
+        def format_event(e):
+            return [ e['category'], e['occurred'], e['weight'],
+                    formatting.truncate_long_text(e['description'], 40),
+                    len(e['logEntrys']), len(e['artifacts']),
+                    e['eventId'] ]
 
-            return [ truncate_string(e[field]) for field in fields ]
-
-        events = [ show_event(e) for e in events ]
+        events = [ format_event(e) for e in events ]
         print(tabulate(events, fields, tablefmt="simple"))
     else:
         print("No events found")
