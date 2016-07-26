@@ -1,4 +1,5 @@
-import re
+import re, pprint
+from itertools import islice
 import click
 import dateparser
 from tabulate import tabulate
@@ -19,7 +20,6 @@ def _create_summary_of_log_entry(conn, log_entry):
         event_id = log_entry["event"]
         event = client.get_event(conn, event_id)
     except Exception as e:
-        import pprint
         pprint.pprint(log_entry)
         raise e
 
@@ -140,7 +140,33 @@ def list_events(ctx, category, weight):
                     len(e['logEntrys']), len(e['artifacts']),
                     e['eventId'] ]
 
-        events = [ format_event(e) for e in events ]
-        print(tabulate(events, fields, tablefmt="simple"))
+        def slice_and_display_ievents(ievents, step_size=25):
+            events_sliced = list(islice(ievents, step_size))
+            events_print = [ format_event(e) for e in events_sliced ]
+            print(tabulate(events_print, fields, tablefmt="simple"))
+            return events_sliced
+
+        ievents = iter(events)
+        events_sliced = slice_and_display_ievents(ievents)
+
+        while True:
+            if events_sliced:
+                operation = input("What's next? {more/show/log/done}: ")
+
+                if operation == "more":
+                    events_sliced = slice_and_display_ievents(ievents)
+                elif operation == "show":
+                    # Show event in more details
+                    index = int(input("Which?: "))
+                    pprint.pprint(formatting.format_event(events_sliced[index]),
+                            width=120)
+                elif operation == "log":
+                    # Create log
+                    # TODO
+                    pass
+                elif operation == "done":
+                    break
+            else:
+                break
     else:
         print("No events found")
