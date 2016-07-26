@@ -1,6 +1,6 @@
 # TODO: Yes need to fix this violation of visibility
 from functools import partial
-from jarvis_cli.client import _get_jarvis_resource, _post_jarvis_resource, \
+from jarvis_cli.client.common import _get_jarvis_resource, _post_jarvis_resource, \
     _put_jarvis_resource, query
 
 
