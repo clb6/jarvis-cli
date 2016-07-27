@@ -50,14 +50,30 @@ def create_event(ctx):
 
     pprint.pprint(formatting.format_event_request(request), width=120)
 
+    def prompt_create_log(connection, author, event_id):
+        while True:
+            should_create_log = input("Create log entry? [Y/N]: ")
+
+            if should_create_log == "Y":
+                fh.create_file_log(connection, author, event_id)
+                break
+            elif should_create_log == "N":
+                break
+
     while True:
         should_publish = input("Publish? [Y/N]: ")
 
         if should_publish == "Y":
-            response = client.post_event(ctx.obj["connection"], request)
+            connection = ctx.obj["connection"]
+            response = client.post_event(connection, request)
 
             if response:
-                print("Created new event: {0}".format(response.get("eventId")))
+                event_id = response.get("eventId")
+                print("Created new event: {0}".format(event_id))
+                author = config.get_author(ctx.obj["config_map"])
+                prompt_create_log(connection, author, event_id)
+            else:
+                print("Something unexpected happened while publishing the event.")
             break
         elif should_publish == "N":
             print("Canceled event publish")
