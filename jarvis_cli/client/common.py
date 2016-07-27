@@ -1,4 +1,5 @@
 from collections import namedtuple
+from itertools import chain
 from functools import partial
 import json
 import urllib
@@ -105,11 +106,9 @@ def post_event(dbconn, event_request, quiet=False):
     return _post_jarvis_resource_unconverted('events', dbconn, event_request,
             quiet=quiet, skip_tags_check=False)
 
-def _query_unconverted(endpoint, dbconn, query_params):
+
+def query_generator(endpoint, dbconn, query_params):
     def query_jarvis_resources(url):
-        """
-        Recursively query for all tags
-        """
         r = requests.get(url)
 
         if r.status_code == 200:
@@ -120,9 +119,7 @@ def _query_unconverted(endpoint, dbconn, query_params):
                     if link['rel'] == "next"]
             next_link = links.pop() if links else None
 
-            more_items = query_jarvis_resources(next_link) \
-                if next_link else []
-            return result['items'] + more_items
+            return result["items"], next_link
         else:
             print("Jarvis-api error: {0}".format(r.status_code))
             return []
@@ -133,12 +130,20 @@ def _query_unconverted(endpoint, dbconn, query_params):
 
     query = "&".join([query_param(field, value)
         for field, value in query_params])
-    url = urlunsplit(UrlTuple("http", dbconn.connect_uri(), endpoint, query, ""))
+    next_link = urlunsplit(UrlTuple("http", dbconn.connect_uri(), endpoint, query, ""))
 
-    return query_jarvis_resources(url)
+    while True:
+        items, next_link = query_jarvis_resources(next_link)
+        yield [ _convert(item) for item in items ]
+
+        if not next_link:
+            break
+
+    return []
 
 def query(endpoint, dbconn, query_params):
-    return [ _convert(jo) for jo in _query_unconverted(endpoint, dbconn, query_params) ]
+    return list(chain.from_iterable(
+        [ results for results in query_generator(endpoint, dbconn, query_params) ]))
 
 
 def get_data_summary(resource_type, dbconn):
