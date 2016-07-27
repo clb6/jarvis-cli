@@ -1,5 +1,5 @@
 import re, pprint
-from itertools import islice, chain
+from itertools import chain
 import click
 import dateparser
 from tabulate import tabulate
@@ -128,68 +128,72 @@ def list_events(ctx, category, weight):
     query_params = [ qp for qp in query_params if qp[1] != None ]
 
     conn = ctx.obj["connection"]
-    events = client.query('events', conn, query_params)
+    events_generator = client.query_generator('events', conn, query_params)
 
-    if events:
-        def slice_and_display_ievents(ievents, step_size=25):
-            """Slice an iterator of events by `step_size`, display the events
-            indexed, and return the slice as a list"""
-            fields = ['index', 'category', 'occurred', 'weight', 'description',
-                    '#logs', '#artifacts']
+    def slice_and_display_events(events_generator, num_calls=2):
+        """Slice events by using a the `query_generator` call with a specified
+        number of calls `num_calls`, display the events indexed,
+        and return the slice as a list"""
+        fields = ['index', 'category', 'occurred', 'weight', 'description',
+                '#logs', '#artifacts']
 
-            def format_event(e):
-                return [ e['category'], e['occurred'], e['weight'],
-                        formatting.truncate_long_text(e['description'], 40),
-                        len(e['logEntrys']), len(e['artifacts']) ]
+        def format_event(e):
+            return [ e['category'], e['occurred'], e['weight'],
+                    formatting.truncate_long_text(e['description'], 40),
+                    len(e['logEntrys']), len(e['artifacts']) ]
 
-            def chain_each_event(it):
-                """Takes [[1], ["abc", "xyz"]] and produces [1, "abc", "xyz"]"""
-                return list(chain.from_iterable(it))
+        def chain_each_event(it):
+            """Takes [[1], ["abc", "xyz"]] and produces [1, "abc", "xyz"]"""
+            return list(chain.from_iterable(it))
 
-            events_sliced = list(islice(ievents, step_size))
+        events_sliced = []
 
-            # Create indexed list of formatted event records
-            events_print = [ format_event(e) for e in events_sliced ]
-            indices = [ [i] for i in range(0, step_size) ]
-            events_print = list(map(chain_each_event, zip(indices, events_print)))
-
-            print(tabulate(events_print, fields, tablefmt="simple"))
-            return events_sliced
-
-        ievents = iter(events)
-        events_sliced = slice_and_display_ievents(ievents)
-
-        while True:
-            if events_sliced:
-                command = input("What's next? {more/show/log/done}: ")
-
-                def determine_event_index(command):
-                    command = command.split(" ")
-
-                    if len(command) > 1:
-                        try:
-                            return int(command[1])
-                        except:
-                            pass
-                    return int(input("{0} which event? Give an index: ".format(
-                        command[0].capitalize())))
-
-                if command == "more":
-                    events_sliced = slice_and_display_ievents(ievents)
-                elif "show" in command:
-                    # Show an event in greater detail
-                    index = determine_event_index(command)
-                    pprint.pprint(formatting.format_event(events_sliced[index]),
-                            width=120)
-                elif "log" in command:
-                    # Create log associated with an event
-                    index = determine_event_index(command)
-                    event_id = events_sliced[index]["eventId"]
-                    author = config.get_author(ctx.obj["config_map"])
-                    fh.create_file_log(conn, author, event_id)
-                elif command == "done":
-                    break
-            else:
+        for i in range(0, num_calls):
+            try:
+                events_sliced += next(events_generator)
+            except StopIteration:
+                # Have reached the end of the generator
                 break
-    else:
-        print("No events found")
+
+        # Create indexed list of formatted event records
+        events_print = [ format_event(e) for e in events_sliced ]
+        indices = [ [i] for i in range(0, len(events_sliced)) ]
+        events_print = list(map(chain_each_event, zip(indices, events_print)))
+
+        print(tabulate(events_print, fields, tablefmt="simple"))
+        return events_sliced
+
+    events_sliced = slice_and_display_events(events_generator)
+
+    while True:
+        if events_sliced:
+            command = input("What's next? {more/show/log/done}: ")
+
+            def determine_event_index(command):
+                command = command.split(" ")
+
+                if len(command) > 1:
+                    try:
+                        return int(command[1])
+                    except:
+                        pass
+                return int(input("{0} which event? Give an index: ".format(
+                    command[0].capitalize())))
+
+            if command == "more":
+                events_sliced = slice_and_display_events(events_generator)
+            elif "show" in command:
+                # Show an event in greater detail
+                index = determine_event_index(command)
+                pprint.pprint(formatting.format_event(events_sliced[index]),
+                        width=120)
+            elif "log" in command:
+                # Create log associated with an event
+                index = determine_event_index(command)
+                event_id = events_sliced[index]["eventId"]
+                author = config.get_author(ctx.obj["config_map"])
+                fh.create_file_log(conn, author, event_id)
+            elif command == "done":
+                break
+        else:
+            break
