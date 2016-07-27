@@ -173,8 +173,6 @@ def _create_file(conn, post_func, show_file_func, resource_id_key, local_path,
         show_file_func(resource, resource_id)
         print("Created: {0}".format(resource_id))
 
-AUTHOR = "MUST FIX"
-
 def create_file_log(conn, author, event_id):
     created = datetime.utcnow().replace(microsecond=0)
 
