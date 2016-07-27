@@ -4,7 +4,8 @@ import click
 import dateparser
 from tabulate import tabulate
 import jarvis_cli as jc
-from jarvis_cli import client, formatting
+import jarvis_cli.file_helper as fh
+from jarvis_cli import client, formatting, config
 
 
 @click.group(name="list")
@@ -162,27 +163,30 @@ def list_events(ctx, category, weight):
             if events_sliced:
                 command = input("What's next? {more/show/log/done}: ")
 
+                def determine_event_index(command):
+                    command = command.split(" ")
+
+                    if len(command) > 1:
+                        try:
+                            return int(command[1])
+                        except:
+                            pass
+                    return int(input("{0} which event? Give an index: ".format(
+                        command[0].capitalize())))
+
                 if command == "more":
                     events_sliced = slice_and_display_ievents(ievents)
                 elif "show" in command:
                     # Show an event in greater detail
-                    def determine_index(command):
-                        command = command.split(" ")
-
-                        if len(command) > 1:
-                            try:
-                                return int(command[1])
-                            except:
-                                pass
-                        return int(input("Show which event? Give an index: "))
-
-                    index = determine_index(command)
+                    index = determine_event_index(command)
                     pprint.pprint(formatting.format_event(events_sliced[index]),
                             width=120)
-                elif command == "log":
-                    # Create log
-                    # TODO
-                    pass
+                elif "log" in command:
+                    # Create log associated with an event
+                    index = determine_event_index(command)
+                    event_id = events_sliced[index]["eventId"]
+                    author = config.get_author(ctx.obj["config_map"])
+                    fh.create_file_log(conn, author, event_id)
                 elif command == "done":
                     break
             else:
