@@ -26,11 +26,11 @@ def get_config_map(environment, config_path):
     else:
         raise JarvisCliConfigError("Configuration not setup: {0}".format(config_path))
 
-def _get_config_param(key, config_map):
-    return config_map[key]
+def _get_config_param(key, config_map, expected_type=str):
+    return expected_type(config_map[key])
 
 get_host = partial(_get_config_param, "host")
-get_port = partial(_get_config_param, "port")
+get_port = partial(_get_config_param, "port", expected_type=int)
 get_jarvis_data_directory = partial(_get_config_param, "data_directory")
 get_jarvis_snapshots_directory = partial(_get_config_param, "snapshots_directory")
 get_author = partial(_get_config_param, "author")
@@ -40,11 +40,15 @@ def get_client_connection(config_map):
     port = get_port(config_map)
     return DBConn(host, port)
 
-def _set_config_param(key, config_map, value):
-    config_map[key] = value
+def _set_config_param(key, config_map, value, expected_type=str):
+    if expected_type != type(value):
+        raise TypeError("Expecting {0} to be an {1}".format(key, expected_type))
+    # ConfigParser only allows setting string values. The expected_type is used
+    # as a value validation.
+    config_map[key] = str(value)
 
 set_host = partial(_set_config_param, "host")
-set_port = partial(_set_config_param, "port")
+set_port = partial(_set_config_param, "port", expected_type=int)
 set_jarvis_data_directory = partial(_set_config_param, "data_directory")
 set_jarvis_snapshots_directory = partial(_set_config_param, "snapshots_directory")
 set_author = partial(_set_config_param, "author")
