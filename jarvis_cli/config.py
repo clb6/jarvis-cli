@@ -5,7 +5,9 @@ from contextlib import contextmanager
 from jarvis_cli.exceptions import JarvisCliConfigError
 from jarvis_cli.client import DBConn
 
-JARVIS_CLI_CONFIG_PATH = os.path.join(os.environ["HOME"], ".jarvis", "cli_config.ini")
+JARVIS_CLI_CONFIG_DIR = os.path.join(os.environ["HOME"], ".jarvis")
+JARVIS_CLI_CONFIG_PATH = os.path.join(JARVIS_CLI_CONFIG_DIR, "cli_config.ini")
+JARVIS_CLI_DEFAULT_SNAPSHOTS_DIR = os.path.join(JARVIS_CLI_CONFIG_DIR, "snapshots")
 
 
 @contextmanager
