@@ -120,25 +120,44 @@ def list_tags(ctx, tag_name, associated_tag_names):
 
 @do_action_list.command(name="events")
 @click.option('-c', '--category', type=click.Choice(jc.EVENT_CATEGORIES), help='Event category')
-@click.option('-w', '--weight', type=int, help='Event weight lower bound')
+@click.option('--only-important', is_flag=True, default=False, help='Show only important events')
 @click.pass_context
-def list_events(ctx, category, weight):
+def list_events(ctx, category, only_important):
     """Query and list events"""
+    weight = None
     query_params = [('category', category), ('weight', weight)]
     query_params = [ qp for qp in query_params if qp[1] != None ]
 
     conn = ctx.obj["connection"]
     events_generator = client.query_generator('events', conn, query_params)
 
-    def slice_and_display_events(events_generator, num_calls=2):
+    def slice_and_display_events(events_generator, batch_size=20):
         """Slice events by using a the `query_generator` call with a specified
         number of calls `num_calls`, display the events indexed,
         and return the slice as a list"""
-        fields = ['index', 'category', 'occurred', 'weight', 'description',
-                '#logs', '#artifacts']
+        events_sliced = []
+
+        def is_important(e):
+            category = e['category']
+            return e['weight'] > jc.EVENT_CATEGORIES_TO_DEFAULTS[category]
+
+        while True:
+            try:
+                current_batch = next(events_generator)
+
+                if only_important:
+                    events_sliced += list(filter(is_important, current_batch))
+                else:
+                    events_sliced += current_batch
+
+                if len(events_sliced) >= batch_size:
+                    break
+            except StopIteration:
+                # Have reached the end of the generator
+                break
 
         def format_event(e):
-            return [ e['category'], e['occurred'], e['weight'],
+            return [ e['category'], e['occurred'], is_important(e),
                     formatting.truncate_long_text(e['description'], 40),
                     len(e['logEntrys']), len(e['artifacts']) ]
 
@@ -146,19 +165,13 @@ def list_events(ctx, category, weight):
             """Takes [[1], ["abc", "xyz"]] and produces [1, "abc", "xyz"]"""
             return list(chain.from_iterable(it))
 
-        events_sliced = []
-
-        for i in range(0, num_calls):
-            try:
-                events_sliced += next(events_generator)
-            except StopIteration:
-                # Have reached the end of the generator
-                break
-
         # Create indexed list of formatted event records
         events_print = [ format_event(e) for e in events_sliced ]
         indices = [ [i] for i in range(0, len(events_sliced)) ]
         events_print = list(map(chain_each_event, zip(indices, events_print)))
+
+        fields = ['index', 'category', 'occurred', 'important', 'description',
+                '#logs', '#artifacts']
 
         print(tabulate(events_print, fields, tablefmt="simple"))
         return events_sliced

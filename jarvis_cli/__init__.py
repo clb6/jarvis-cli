@@ -8,6 +8,7 @@ EVENT_CATEGORIES_TO_DEFAULTS = {
         "interacted": 80,
         "formulated": 80,
         "completed": 50,
+        "migrated": 50,
         "detected": 10,
         "measured": 5
         }
