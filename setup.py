@@ -7,7 +7,9 @@ setup(
         packages = find_packages(),
         author = "Michael Hwang",
         author_email = "hirehwang@gmail.com",
-        description = ("Jarvis command-line tool"),
+        url = "https://clb6.github.io/",
+        license = "Apache 2.0",
+        description = ("Jarvis Python command-line tool"),
         # Adopted the method of creating bins through setuptools
         # http://click.pocoo.org/5/setuptools/#setuptools-integration
         # The webpage lists benefits of doing this.
