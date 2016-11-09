@@ -26,8 +26,7 @@ In the configuration file, each subsection is an *environment* and each environm
 
 ```
 [default]
-host = localhost
-port = 3000
+api_url = http://your-jarvis-api.com/
 ```
 
 The environment can be selected with the `--environment` command argument.  The `default` environment is the default environment and does not have to be specified.
@@ -37,8 +36,7 @@ The environment can be selected with the `--environment` command argument.  The 
 Parameter Name | Description
 -------------- | -----------
 author | Author name to use
-host | jarvis-api hostname
-port | jarvis-api port
+api_url | jarvis-api URL
 data_directory | Local jarvis-api data directory used to perform backups
 snapshots_directory | Directory where the backup snapshots are stored
 

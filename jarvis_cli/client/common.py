@@ -3,19 +3,15 @@ from itertools import chain
 from functools import partial
 import json
 import urllib
-from urllib.parse import urlunsplit
 import requests
 
 
-class DBConn(object):
-    def __init__(self, host, port):
-        self._host = host
-        self._port = port
+def _build_url(*args):
+    """Build string url
 
-    def connect_uri(self):
-        return "{host}:{port}".format(host=self._host, port=self._port)
-
-UrlTuple = namedtuple('UrlTuple', ['scheme', 'netloc', 'path', 'query', 'fragment'])
+    Disappointed in urllib.parse library because it does give the richness to build
+    arbitrary URLs"""
+    return "/".join(args)
 
 
 def _convert(json_object):
@@ -34,9 +30,9 @@ def _convert(json_object):
         return dict([ replace_links(k, v) for k,v in json_object.items() ])
 
 
-def _get_jarvis_resource_unconverted(endpoint, dbconn, resource_id):
-    r = requests.get("http://{0}/{1}/{2}".format(dbconn.connect_uri(), endpoint,
-        urllib.parse.quote(resource_id)))
+def _get_jarvis_resource_unconverted(endpoint, conn, resource_id):
+    url = _build_url(conn, endpoint, urllib.parse.quote(resource_id))
+    r = requests.get(url)
 
     if r.status_code == 200:
         return r.json()
@@ -45,18 +41,17 @@ def _get_jarvis_resource_unconverted(endpoint, dbconn, resource_id):
     else:
         print("Jarvis-api error: {0}, {1}".format(r.status_code, r.json()))
 
-def _get_jarvis_resource(endpoint, dbconn, resource_id):
-    return _convert(_get_jarvis_resource_unconverted(endpoint, dbconn, resource_id))
+def _get_jarvis_resource(endpoint, conn, resource_id):
+    return _convert(_get_jarvis_resource_unconverted(endpoint, conn, resource_id))
 
 get_tag = partial(_get_jarvis_resource, 'tags')
 # WATCH! Events are unconverted.
 get_event = partial(_get_jarvis_resource_unconverted, 'events')
 
 
-def _put_jarvis_resource_unconverted(endpoint, dbconn, resource_id, resource_updated):
-    r = requests.put("http://{0}/{1}/{2}".format(dbconn.connect_uri(), endpoint,
-        urllib.parse.quote(resource_id)),
-            json=resource_updated)
+def _put_jarvis_resource_unconverted(endpoint, conn, resource_id, resource_updated):
+    url = _build_url(conn, endpoint, urllib.parse.quote(resource_id))
+    r = requests.put(url, json=resource_updated)
 
     if r.status_code == 200:
         return r.json()
@@ -66,17 +61,17 @@ def _put_jarvis_resource_unconverted(endpoint, dbconn, resource_id, resource_upd
     elif r.status_code == 404:
         print("Jarvis-api not found: {0}".format(resource_id))
 
-def _put_jarvis_resource(endpoint, dbconn, resource_id, resource_updated):
-    return _convert(_put_jarvis_resource_unconverted(endpoint, dbconn, resource_id,
+def _put_jarvis_resource(endpoint, conn, resource_id, resource_updated):
+    return _convert(_put_jarvis_resource_unconverted(endpoint, conn, resource_id,
         resource_updated))
 
 put_tag = partial(_put_jarvis_resource, 'tags')
 put_event = partial(_put_jarvis_resource, 'events')
 
 
-def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request, quiet,
+def _post_jarvis_resource_unconverted(endpoint, conn, resource_request, quiet,
         skip_tags_check):
-    url = "http://{0}/{1}".format(dbconn.connect_uri(), endpoint)
+    url = _build_url(conn, endpoint)
 
     if skip_tags_check:
         url = "{0}?skipTagsCheck=true".format(url)
@@ -94,20 +89,20 @@ def _post_jarvis_resource_unconverted(endpoint, dbconn, resource_request, quiet,
         if not quiet:
             print("Jarvis-api error: {0}, {1}".format(r.status_code, body))
 
-def _post_jarvis_resource(endpoint, dbconn, resource_request, quiet=False,
+def _post_jarvis_resource(endpoint, conn, resource_request, quiet=False,
         skip_tags_check=False):
-    return _convert(_post_jarvis_resource_unconverted(endpoint, dbconn,
+    return _convert(_post_jarvis_resource_unconverted(endpoint, conn,
         resource_request, quiet, skip_tags_check))
 
 post_tag = partial(_post_jarvis_resource, 'tags')
 
-def post_event(dbconn, event_request, quiet=False):
+def post_event(conn, event_request, quiet=False):
     # FIXME: Events don't use skip_tags..
-    return _post_jarvis_resource_unconverted('events', dbconn, event_request,
+    return _post_jarvis_resource_unconverted('events', conn, event_request,
             quiet=quiet, skip_tags_check=False)
 
 
-def query_generator(endpoint, dbconn, query_params):
+def query_generator(endpoint, conn, query_params):
     def query_jarvis_resources(url):
         r = requests.get(url)
 
@@ -130,7 +125,7 @@ def query_generator(endpoint, dbconn, query_params):
 
     query = "&".join([query_param(field, value)
         for field, value in query_params])
-    next_link = urlunsplit(UrlTuple("http", dbconn.connect_uri(), endpoint, query, ""))
+    next_link = _build_url(conn, endpoint, query)
 
     while True:
         items, next_link = query_jarvis_resources(next_link)
@@ -141,13 +136,13 @@ def query_generator(endpoint, dbconn, query_params):
 
     return []
 
-def query(endpoint, dbconn, query_params):
+def query(endpoint, conn, query_params):
     return list(chain.from_iterable(
-        [ results for results in query_generator(endpoint, dbconn, query_params) ]))
+        [ results for results in query_generator(endpoint, conn, query_params) ]))
 
 
-def get_data_summary(resource_type, dbconn):
-    url = "http://{0}/datasummary/{1}".format(dbconn.connect_uri(), resource_type)
+def get_data_summary(resource_type, conn):
+    url = _build_url(conn, "datasummary", resource_type)
     r = requests.get(url)
     r.raise_for_status()
     return r.json()
