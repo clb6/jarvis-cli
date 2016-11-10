@@ -119,13 +119,20 @@ def query_generator(endpoint, conn, query_params):
             print("Jarvis-api error: {0}".format(r.status_code))
             return []
 
+    # REVIEW: This whole query url construction needs to be revisited
+
+    next_link = _build_url(conn, endpoint)
+
     def query_param(field, value):
         return "{0}={1}".format(field, urllib.parse.quote(value)) \
                 if value else ""
 
-    query = "&".join([query_param(field, value)
-        for field, value in query_params])
-    next_link = _build_url(conn, endpoint, query)
+    query_params = list(filter(lambda qp: qp[1] != None, query_params))
+
+    if query_params:
+        query = "&".join([query_param(field, value)
+            for field, value in query_params])
+        next_link = "?".join([next_link, query])
 
     while True:
         items, next_link = query_jarvis_resources(next_link)
