@@ -120,12 +120,14 @@ def list_tags(ctx, tag_name, associated_tag_names):
 
 @do_action_list.command(name="events")
 @click.option('-c', '--category', type=click.Choice(jc.EVENT_CATEGORIES), help='Event category')
+@click.option('-s', '--search-term', default=None, help='Search term to search in event descriptions')
 @click.option('--only-important', is_flag=True, default=False, help='Show only important events')
 @click.pass_context
-def list_events(ctx, category, only_important):
+def list_events(ctx, category, search_term, only_important):
     """Query and list events"""
     weight = None
-    query_params = [('category', category), ('weight', weight)]
+    query_params = [('category', category), ('searchterm', search_term),
+            ('weight', weight)]
     query_params = [ qp for qp in query_params if qp[1] != None ]
 
     conn = ctx.obj["connection"]
