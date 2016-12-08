@@ -1,4 +1,5 @@
 import os
+from collections import namedtuple
 from functools import partial
 import configparser
 from contextlib import contextmanager
@@ -31,12 +32,17 @@ def _get_config_param(key, config_map, expected_type=str):
     return expected_type(config_map[key])
 
 get_api_url = partial(_get_config_param, "api_url")
+get_api_user = partial(_get_config_param, "api_user")
+get_api_password = partial(_get_config_param, "api_password")
 get_jarvis_data_directory = partial(_get_config_param, "data_directory")
 get_jarvis_snapshots_directory = partial(_get_config_param, "snapshots_directory")
 get_author = partial(_get_config_param, "author")
 
+ClientConnection = namedtuple("ClientConnection", ["url", "user", "password"])
+
 def get_client_connection(config_map):
-    return get_api_url(config_map).strip("/")
+    return ClientConnection(get_api_url(config_map).strip("/"),
+            get_api_user(config_map), get_api_password(config_map))
 
 def _set_config_param(key, config_map, value, expected_type=str):
     if expected_type != type(value):
@@ -45,8 +51,9 @@ def _set_config_param(key, config_map, value, expected_type=str):
     # as a value validation.
     config_map[key] = str(value)
 
-set_host = partial(_set_config_param, "host")
-set_port = partial(_set_config_param, "port", expected_type=int)
+set_api_url = partial(_set_config_param, "api_url")
+set_api_user = partial(_set_config_param, "api_user")
+set_api_password = partial(_set_config_param, "api_password")
 set_jarvis_data_directory = partial(_set_config_param, "data_directory")
 set_jarvis_snapshots_directory = partial(_set_config_param, "snapshots_directory")
 set_author = partial(_set_config_param, "author")

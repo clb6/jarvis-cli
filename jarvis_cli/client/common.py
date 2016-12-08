@@ -31,8 +31,8 @@ def _convert(json_object):
 
 
 def _get_jarvis_resource_unconverted(endpoint, conn, resource_id):
-    url = _build_url(conn, endpoint, urllib.parse.quote(resource_id))
-    r = requests.get(url)
+    url = _build_url(conn.url, endpoint, urllib.parse.quote(resource_id))
+    r = requests.get(url, auth=(conn.user, conn.password))
 
     if r.status_code == 200:
         return r.json()
@@ -50,8 +50,8 @@ get_event = partial(_get_jarvis_resource_unconverted, 'events')
 
 
 def _put_jarvis_resource_unconverted(endpoint, conn, resource_id, resource_updated):
-    url = _build_url(conn, endpoint, urllib.parse.quote(resource_id))
-    r = requests.put(url, json=resource_updated)
+    url = _build_url(conn.url, endpoint, urllib.parse.quote(resource_id))
+    r = requests.put(url, auth=(conn.user, conn.password), json=resource_updated)
 
     if r.status_code == 200:
         return r.json()
@@ -71,12 +71,12 @@ put_event = partial(_put_jarvis_resource, 'events')
 
 def _post_jarvis_resource_unconverted(endpoint, conn, resource_request, quiet,
         skip_tags_check):
-    url = _build_url(conn, endpoint)
+    url = _build_url(conn.url, endpoint)
 
     if skip_tags_check:
         url = "{0}?skipTagsCheck=true".format(url)
 
-    r = requests.post(url, json=resource_request)
+    r = requests.post(url, auth=(conn.user, conn.password), json=resource_request)
 
     if r.status_code == 200 or r.status_code == 201:
         return r.json()
@@ -104,7 +104,7 @@ def post_event(conn, event_request, quiet=False):
 
 def query_generator(endpoint, conn, query_params):
     def query_jarvis_resources(url):
-        r = requests.get(url)
+        r = requests.get(url, auth=(conn.user, conn.password))
 
         if r.status_code == 200:
             result = r.json()
@@ -121,7 +121,7 @@ def query_generator(endpoint, conn, query_params):
 
     # REVIEW: This whole query url construction needs to be revisited
 
-    next_link = _build_url(conn, endpoint)
+    next_link = _build_url(conn.url, endpoint)
 
     def query_param(field, value):
         return "{0}={1}".format(field, urllib.parse.quote(value)) \
@@ -149,7 +149,7 @@ def query(endpoint, conn, query_params):
 
 
 def get_data_summary(resource_type, conn):
-    url = _build_url(conn, "datasummary", resource_type)
-    r = requests.get(url)
+    url = _build_url(conn.url, "datasummary", resource_type)
+    r = requests.get(url, auth=(conn.user, conn.password))
     r.raise_for_status()
     return r.json()

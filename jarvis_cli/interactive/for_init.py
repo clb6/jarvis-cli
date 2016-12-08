@@ -21,9 +21,10 @@ def prompt_init_config(environment, config_path):
     ConfigParam = namedtuple("ConfigParam", ["title", "set_func", "default"])
     config_params = [
             ConfigParam("Your name", config.set_author, os.getlogin()),
-            ConfigParam("Jarvis API hostname", config.set_host, "localhost"),
-            ConfigParam("Jarvis API port", config.set_port, 3000),
-            ConfigParam("Jarvis API data directory",
+            ConfigParam("Jarvis api url", config.set_api_url, "http://localhost"),
+            ConfigParam("Jarvis api username", config.set_api_user, ""),
+            ConfigParam("Jarvis api password", config.set_api_password, ""),
+            ConfigParam("Jarvis api data directory",
                 config.set_jarvis_data_directory, "/opt/jarvis"),
             ConfigParam("Jarvis API snapshots directory",
                 config.set_jarvis_snapshots_directory,
